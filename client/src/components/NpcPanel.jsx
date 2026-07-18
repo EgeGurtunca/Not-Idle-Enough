@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useGameStore } from '../store/gameStore.js';
 import { NPCS, MILESTONE_EVERY } from '../game/constants.js';
 import { npcDps, npcLevelCost, bulkCost, maxAffordable } from '../game/formulas.js';
@@ -15,17 +14,15 @@ function NpcRow({ npc, amount }) {
   const unlocked = level > 0;
   const costFn = (l) => npcLevelCost(npc, l);
 
+  // Kilitliyken de toplu alım çalışır: ilk seviyenin maliyeti işe alım ücretidir
   let count, cost;
-  if (!unlocked) {
-    count = 1;
-    cost = npc.unlockCost;
-  } else if (amount === 'max') {
+  if (amount === 'max') {
     ({ count, cost } = maxAffordable(costFn, level, gold));
   } else {
     count = amount;
     cost = bulkCost(costFn, level, amount);
   }
-  const affordable = amount === 'max' && unlocked ? count > 0 : gold >= cost;
+  const affordable = amount === 'max' ? count > 0 : gold >= cost;
   const nextMilestone = (Math.floor(level / MILESTONE_EVERY) + 1) * MILESTONE_EVERY;
 
   return (
@@ -48,15 +45,9 @@ function NpcRow({ npc, amount }) {
         type="button"
         className="buy"
         disabled={!affordable}
-        onClick={() =>
-          !unlocked
-            ? buyNpcLevels(npc.id, 1)
-            : amount === 'max'
-              ? buyNpcMax(npc.id)
-              : buyNpcLevels(npc.id, amount)
-        }
+        onClick={() => (amount === 'max' ? buyNpcMax(npc.id) : buyNpcLevels(npc.id, amount))}
       >
-        {!unlocked ? 'İşe Al' : amount === 'max' ? `Maks ×${count}` : `Al ×${count}`}
+        {!unlocked ? `İşe Al ×${count}` : amount === 'max' ? `Maks ×${count}` : `Al ×${count}`}
         <span className="buy-cost">🪙 {fmt(cost)}</span>
       </button>
     </div>
@@ -65,7 +56,8 @@ function NpcRow({ npc, amount }) {
 
 export default function NpcPanel() {
   const npcLevels = useGameStore((s) => s.npcLevels);
-  const [amount, setAmount] = useState(1);
+  const amount = useGameStore((s) => s.buyAmount);
+  const setAmount = useGameStore((s) => s.setBuyAmount);
 
   const firstLockedIdx = NPCS.findIndex((n) => (npcLevels[n.id] ?? 0) <= 0);
   const visible = firstLockedIdx === -1 ? NPCS : NPCS.slice(0, firstLockedIdx + 1);

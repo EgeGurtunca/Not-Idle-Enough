@@ -46,42 +46,48 @@ export const HERO_UPGRADES = [
 ];
 
 // ---- NPC'ler (Yoldaşlar) ----
+// projectile: savaş alanında fırlattıkları mermi (her NPC'ninki farklı)
 export const NPCS = [
-  { id: 'okcu',      name: 'Okçu',            emoji: '🏹', unlockCost: 50,      baseDps: 4 },
-  { id: 'sovalye',   name: 'Şövalye',         emoji: '🛡️', unlockCost: 1.2e3,   baseDps: 90 },
-  { id: 'buyucu',    name: 'Büyücü',          emoji: '🧙', unlockCost: 3e4,     baseDps: 2e3 },
-  { id: 'haydut',    name: 'Haydut',          emoji: '🗡️', unlockCost: 7.5e5,   baseDps: 4.5e4 },
-  { id: 'rahip',     name: 'Savaş Rahibi',    emoji: '⚒️', unlockCost: 2e7,     baseDps: 1e6 },
-  { id: 'ejderavci', name: 'Ejderha Avcısı',  emoji: '⚔️', unlockCost: 5e8,     baseDps: 2.2e7 },
-  { id: 'suikastci', name: 'Gölge Suikastçı', emoji: '🥷', unlockCost: 1.2e10,  baseDps: 5e8 },
-  { id: 'firtina',   name: 'Fırtına Çağırıcı',emoji: '🌩️', unlockCost: 3e11,    baseDps: 1.1e10 },
-  { id: 'ates',      name: 'Ateş Dansçısı',   emoji: '🔥', unlockCost: 8e12,    baseDps: 2.6e11 },
-  { id: 'buz',       name: 'Buz Kraliçesi',   emoji: '❄️', unlockCost: 2e14,    baseDps: 6e12 },
-  { id: 'ent',       name: 'Kadim Ent',       emoji: '🌳', unlockCost: 5e15,    baseDps: 1.4e14 },
-  { id: 'zaman',     name: 'Zaman Bekçisi',   emoji: '⏳', unlockCost: 1.2e17,  baseDps: 3.2e15 },
+  { id: 'okcu',      name: 'Okçu',            emoji: '🏹', projectile: '➸',  unlockCost: 50,      baseDps: 4 },
+  { id: 'sovalye',   name: 'Şövalye',         emoji: '🛡️', projectile: '🗡️', unlockCost: 1.2e3,   baseDps: 90 },
+  { id: 'buyucu',    name: 'Büyücü',          emoji: '🧙', projectile: '✨', unlockCost: 3e4,     baseDps: 2e3 },
+  { id: 'haydut',    name: 'Haydut',          emoji: '🗡️', projectile: '🔪', unlockCost: 7.5e5,   baseDps: 4.5e4 },
+  { id: 'rahip',     name: 'Savaş Rahibi',    emoji: '⚒️', projectile: '🌟', unlockCost: 2e7,     baseDps: 1e6 },
+  { id: 'ejderavci', name: 'Ejderha Avcısı',  emoji: '⚔️', projectile: '🎯', unlockCost: 5e8,     baseDps: 2.2e7 },
+  { id: 'suikastci', name: 'Gölge Suikastçı', emoji: '🥷', projectile: '🌘', unlockCost: 1.2e10,  baseDps: 5e8 },
+  { id: 'firtina',   name: 'Fırtına Çağırıcı',emoji: '🌩️', projectile: '⚡', unlockCost: 3e11,    baseDps: 1.1e10 },
+  { id: 'ates',      name: 'Ateş Dansçısı',   emoji: '🔥', projectile: '🔥', unlockCost: 8e12,    baseDps: 2.6e11 },
+  { id: 'buz',       name: 'Buz Kraliçesi',   emoji: '❄️', projectile: '❄️', unlockCost: 2e14,    baseDps: 6e12 },
+  { id: 'ent',       name: 'Kadim Ent',       emoji: '🌳', projectile: '🍃', unlockCost: 5e15,    baseDps: 1.4e14 },
+  { id: 'zaman',     name: 'Zaman Bekçisi',   emoji: '⏳', projectile: '🌀', unlockCost: 1.2e17,  baseDps: 3.2e15 },
 ];
 
 // ---- Prestij (kristal) upgrade'leri ----
 export const PRESTIGE_UPGRADES = [
   {
     id: 'keskinVurus', name: 'Keskin Vuruş', emoji: '💥',
-    desc: 'Klik hasarı +%25 (seviye başına)',
+    desc: 'Klik hasarı +%50 (seviye başına)',
     baseCost: 10, costGrowth: 2, maxLevel: Infinity,
   },
   {
     id: 'komutanlik', name: 'Komutanlık', emoji: '🚩',
-    desc: 'NPC hasarı +%25 (seviye başına)',
+    desc: 'NPC hasarı +%50 (seviye başına)',
     baseCost: 10, costGrowth: 2, maxLevel: Infinity,
   },
   {
     id: 'altinDokunus', name: 'Altın Dokunuş', emoji: '🪙',
-    desc: 'Altın kazancı +%20 (seviye başına)',
+    desc: 'Altın kazancı +%35 (seviye başına)',
     baseCost: 15, costGrowth: 2, maxLevel: Infinity,
   },
   {
     id: 'zamanBukucu', name: 'Zaman Bükücü', emoji: '⏱️',
     desc: 'Boss süresi +2 saniye (seviye başına)',
     baseCost: 25, costGrowth: 3, maxLevel: 5,
+  },
+  {
+    id: 'surekAvi', name: 'Sürek Avı', emoji: '🐾',
+    desc: 'Boss için gereken yaratık sayısı −1 (seviye başına)',
+    baseCost: 40, costGrowth: 3, maxLevel: 5,
   },
   {
     id: 'hazirBaslangic', name: 'Hazır Başlangıç', emoji: '🎒',
@@ -92,8 +98,18 @@ export const PRESTIGE_UPGRADES = [
 
 // ---- Artifact sistemi ----
 export const PULL_COST_BASE = 20; // ilk sandık fiyatı (kristal)
-export const PULL_COST_GROWTH = 1.02; // her çekilişte fiyat çarpanı
+export const PULL_COST_GROWTH = 1.035; // her çekilişte fiyat çarpanı
 export const ARTIFACT_MAX_LEVEL = 10; // kopyalar seviye atlatır
+
+// Kristalle doğrudan artifact geliştirme: taban maliyet rarity'ye göre
+export const ARTIFACT_UPGRADE_BASE = {
+  siradan: 30,
+  olagandisi: 60,
+  nadir: 125,
+  epik: 250,
+  efsanevi: 600,
+};
+export const ARTIFACT_UPGRADE_GROWTH = 1.6; // her seviyede maliyet çarpanı
 
 // Rarity'ler ve çekiliş şansları (%). Toplam 100.
 export const RARITIES = [
@@ -108,40 +124,40 @@ export const RARITIES = [
 // value = seviye başına etki (yüzdeler ondalık, bossTime saniye)
 export const ARTIFACTS = [
   // --- Sıradan (10) ---
-  { id: 'pasliKilic',    name: 'Paslı Kılıç',          emoji: '🗡️', rarity: 'siradan', effect: 'click',      value: 0.10 },
-  { id: 'tahtaKalkan',   name: 'Tahta Kalkan',         emoji: '🛡️', rarity: 'siradan', effect: 'dps',        value: 0.10 },
-  { id: 'bakirYuzuk',    name: 'Bakır Yüzük',          emoji: '💍', rarity: 'siradan', effect: 'gold',       value: 0.08 },
+  { id: 'pasliKilic',    name: 'Paslı Kılıç',          emoji: '🗡️', rarity: 'siradan', effect: 'click',      value: 0.15 },
+  { id: 'tahtaKalkan',   name: 'Tahta Kalkan',         emoji: '🛡️', rarity: 'siradan', effect: 'dps',        value: 0.15 },
+  { id: 'bakirYuzuk',    name: 'Bakır Yüzük',          emoji: '💍', rarity: 'siradan', effect: 'gold',       value: 0.12 },
   { id: 'sansliZar',     name: 'Şanslı Zar',           emoji: '🎲', rarity: 'siradan', effect: 'critChance', value: 0.01 },
-  { id: 'deriEldiven',   name: 'Deri Eldiven',         emoji: '🧤', rarity: 'siradan', effect: 'click',      value: 0.12 },
-  { id: 'demirTilsim',   name: 'Demir Tılsım',         emoji: '🧿', rarity: 'siradan', effect: 'dps',        value: 0.12 },
+  { id: 'deriEldiven',   name: 'Deri Eldiven',         emoji: '🧤', rarity: 'siradan', effect: 'click',      value: 0.18 },
+  { id: 'demirTilsim',   name: 'Demir Tılsım',         emoji: '🧿', rarity: 'siradan', effect: 'dps',        value: 0.18 },
   { id: 'kirikKumSaati', name: 'Kırık Kum Saati',      emoji: '⌛', rarity: 'siradan', effect: 'bossTime',   value: 1 },
-  { id: 'eskiHarita',    name: 'Yıpranmış Harita',     emoji: '🗺️', rarity: 'siradan', effect: 'gold',       value: 0.10 },
-  { id: 'kemikKolye',    name: 'Kemik Kolye',          emoji: '📿', rarity: 'siradan', effect: 'critMult',   value: 0.05 },
-  { id: 'camKure',       name: 'Cam Küre',             emoji: '🔮', rarity: 'siradan', effect: 'offline',    value: 0.20 },
+  { id: 'eskiHarita',    name: 'Yıpranmış Harita',     emoji: '🗺️', rarity: 'siradan', effect: 'gold',       value: 0.15 },
+  { id: 'kemikKolye',    name: 'Kemik Kolye',          emoji: '📿', rarity: 'siradan', effect: 'critMult',   value: 0.08 },
+  { id: 'camKure',       name: 'Cam Küre',             emoji: '🔮', rarity: 'siradan', effect: 'offline',    value: 0.30 },
   // --- Olağandışı (8) ---
-  { id: 'gumusPala',     name: 'Gümüş Pala',           emoji: '⚔️', rarity: 'olagandisi', effect: 'click',      value: 0.25 },
-  { id: 'savasBorusu',   name: 'Savaş Borusu',         emoji: '📯', rarity: 'olagandisi', effect: 'dps',        value: 0.25 },
-  { id: 'altinKese',     name: 'Altın Kese',           emoji: '👛', rarity: 'olagandisi', effect: 'gold',       value: 0.20 },
+  { id: 'gumusPala',     name: 'Gümüş Pala',           emoji: '⚔️', rarity: 'olagandisi', effect: 'click',      value: 0.40 },
+  { id: 'savasBorusu',   name: 'Savaş Borusu',         emoji: '📯', rarity: 'olagandisi', effect: 'dps',        value: 0.40 },
+  { id: 'altinKese',     name: 'Altın Kese',           emoji: '👛', rarity: 'olagandisi', effect: 'gold',       value: 0.30 },
   { id: 'nisanDurbunu',  name: 'Nişancı Dürbünü',      emoji: '🔭', rarity: 'olagandisi', effect: 'critChance', value: 0.02 },
-  { id: 'zumrutYuzuk',   name: 'Zümrüt Yüzük',         emoji: '💚', rarity: 'olagandisi', effect: 'critMult',   value: 0.15 },
+  { id: 'zumrutYuzuk',   name: 'Zümrüt Yüzük',         emoji: '💚', rarity: 'olagandisi', effect: 'critMult',   value: 0.20 },
   { id: 'kumSaati',      name: 'Kum Saati',            emoji: '⏳', rarity: 'olagandisi', effect: 'bossTime',   value: 2 },
-  { id: 'miknatisEld',   name: 'Mıknatıs Eldiven',     emoji: '🧲', rarity: 'olagandisi', effect: 'gold',       value: 0.25 },
-  { id: 'geceFeneri',    name: 'Gece Feneri',          emoji: '🏮', rarity: 'olagandisi', effect: 'offline',    value: 0.40 },
+  { id: 'miknatisEld',   name: 'Mıknatıs Eldiven',     emoji: '🧲', rarity: 'olagandisi', effect: 'gold',       value: 0.35 },
+  { id: 'geceFeneri',    name: 'Gece Feneri',          emoji: '🏮', rarity: 'olagandisi', effect: 'offline',    value: 0.60 },
   // --- Nadir (6) ---
-  { id: 'ejderDisi',     name: 'Ejder Dişi Hançer',    emoji: '🔪', rarity: 'nadir', effect: 'click',      value: 0.60 },
-  { id: 'kadimSancak',   name: 'Kadim Sancak',         emoji: '🚩', rarity: 'nadir', effect: 'dps',        value: 0.60 },
-  { id: 'midasEli',      name: 'Midas Eli',            emoji: '✋', rarity: 'nadir', effect: 'gold',       value: 0.50 },
-  { id: 'suikastGozu',   name: 'Suikastçı Gözü',       emoji: '👁️', rarity: 'nadir', effect: 'critChance', value: 0.04 },
-  { id: 'kanliYakut',    name: 'Kanlı Yakut',          emoji: '🩸', rarity: 'nadir', effect: 'critMult',   value: 0.40 },
-  { id: 'yildizPusula',  name: 'Yıldız Pusulası',      emoji: '🧭', rarity: 'nadir', effect: 'crystal',    value: 0.10 },
+  { id: 'ejderDisi',     name: 'Ejder Dişi Hançer',    emoji: '🔪', rarity: 'nadir', effect: 'click',      value: 1.00 },
+  { id: 'kadimSancak',   name: 'Kadim Sancak',         emoji: '🚩', rarity: 'nadir', effect: 'dps',        value: 1.00 },
+  { id: 'midasEli',      name: 'Midas Eli',            emoji: '✋', rarity: 'nadir', effect: 'gold',       value: 0.80 },
+  { id: 'suikastGozu',   name: 'Suikastçı Gözü',       emoji: '👁️', rarity: 'nadir', effect: 'critChance', value: 0.05 },
+  { id: 'kanliYakut',    name: 'Kanlı Yakut',          emoji: '🩸', rarity: 'nadir', effect: 'critMult',   value: 0.50 },
+  { id: 'yildizPusula',  name: 'Yıldız Pusulası',      emoji: '🧭', rarity: 'nadir', effect: 'crystal',    value: 0.15 },
   // --- Epik (4) ---
-  { id: 'titanYumrugu',  name: 'Titan Yumruğu',        emoji: '🥊', rarity: 'epik', effect: 'click',   value: 1.50 },
-  { id: 'orduNisani',    name: 'Ordu Nişanı',          emoji: '🎖️', rarity: 'epik', effect: 'dps',     value: 1.50 },
-  { id: 'ejderHazinesi', name: 'Ejderha Hazinesi',     emoji: '🐲', rarity: 'epik', effect: 'gold',    value: 1.20 },
-  { id: 'zamanKristali', name: 'Zaman Kristali',       emoji: '💠', rarity: 'epik', effect: 'crystal', value: 0.20 },
+  { id: 'titanYumrugu',  name: 'Titan Yumruğu',        emoji: '🥊', rarity: 'epik', effect: 'click',   value: 2.50 },
+  { id: 'orduNisani',    name: 'Ordu Nişanı',          emoji: '🎖️', rarity: 'epik', effect: 'dps',     value: 2.50 },
+  { id: 'ejderHazinesi', name: 'Ejderha Hazinesi',     emoji: '🐲', rarity: 'epik', effect: 'gold',    value: 2.00 },
+  { id: 'zamanKristali', name: 'Zaman Kristali',       emoji: '💠', rarity: 'epik', effect: 'crystal', value: 0.30 },
   // --- Efsanevi (2) ---
-  { id: 'tanriKatili',   name: 'Tanrı Katili Kılıcı',  emoji: '⚡', rarity: 'efsanevi', effect: 'click', value: 5.00 },
-  { id: 'ejderKalbi',    name: 'Kadim Ejder Kalbi',    emoji: '❤️‍🔥', rarity: 'efsanevi', effect: 'dps',   value: 5.00 },
+  { id: 'tanriKatili',   name: 'Tanrı Katili Kılıcı',  emoji: '⚡', rarity: 'efsanevi', effect: 'click', value: 10.00 },
+  { id: 'ejderKalbi',    name: 'Kadim Ejder Kalbi',    emoji: '❤️‍🔥', rarity: 'efsanevi', effect: 'dps',   value: 10.00 },
 ];
 
 // ---- Görseller ----

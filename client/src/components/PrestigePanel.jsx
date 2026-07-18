@@ -1,24 +1,43 @@
 import { useState } from 'react';
 import { useGameStore, selectors } from '../store/gameStore.js';
 import { PRESTIGE_STAGE, PRESTIGE_UPGRADES } from '../game/constants.js';
-import { prestigeUpgradeCost, startingGold } from '../game/formulas.js';
+import { prestigeUpgradeCost, startingGold, bulkCost, maxAffordable } from '../game/formulas.js';
 import { saveGame } from '../game/save.js';
 import { fmt } from '../utils/format.js';
+import AmountToggle from './AmountToggle.jsx';
 
-function UpgradeRow({ up }) {
+function UpgradeRow({ up, amount }) {
   const crystals = useGameStore((s) => s.crystals);
   const level = useGameStore((s) => s.prestigeLevels[up.id] ?? 0);
-  const buy = useGameStore((s) => s.buyPrestigeUpgrade);
+  const buyLevels = useGameStore((s) => s.buyPrestigeUpgradeLevels);
+  const buyMax = useGameStore((s) => s.buyPrestigeUpgradeMax);
 
   const maxed = level >= up.maxLevel;
-  const cost = maxed ? 0 : prestigeUpgradeCost(up, level);
+  const remaining = up.maxLevel - level;
+  const costFn = (l) => prestigeUpgradeCost(up, l);
+
+  let count = 0;
+  let cost = 0;
+  if (!maxed) {
+    if (amount === 'max') {
+      ({ count, cost } = maxAffordable(costFn, level, crystals, Math.min(1000, remaining)));
+    } else {
+      count = Math.min(amount, remaining);
+      cost = bulkCost(costFn, level, count);
+    }
+  }
+  const affordable = amount === 'max' ? count > 0 : count > 0 && crystals >= cost;
 
   return (
     <div className="row">
       <span className="row-emoji">{up.emoji}</span>
       <div className="row-info">
         <div className="row-name">
-          {up.name} <span className="row-level">sv {level}{Number.isFinite(up.maxLevel) ? `/${up.maxLevel}` : ''}</span>
+          {up.name}{' '}
+          <span className="row-level">
+            sv {level}
+            {Number.isFinite(up.maxLevel) ? `/${up.maxLevel}` : ''}
+          </span>
         </div>
         <div className="row-sub">{up.desc}</div>
       </div>
@@ -28,10 +47,10 @@ function UpgradeRow({ up }) {
         <button
           type="button"
           className="buy crystal"
-          disabled={crystals < cost}
-          onClick={() => buy(up.id)}
+          disabled={!affordable}
+          onClick={() => (amount === 'max' ? buyMax(up.id) : buyLevels(up.id, amount))}
         >
-          Geliştir
+          {amount === 'max' ? `Maks ×${count}` : `Al ×${count}`}
           <span className="buy-cost">💎 {fmt(cost)}</span>
         </button>
       )}
@@ -42,12 +61,13 @@ function UpgradeRow({ up }) {
 export default function PrestigePanel() {
   const highest = useGameStore((s) => s.highestStage);
   const runHighest = useGameStore((s) => s.runHighestStage);
-  const crystals = useGameStore((s) => s.crystals);
   const prestigeLevels = useGameStore((s) => s.prestigeLevels);
   const gain = useGameStore(selectors.crystalGain);
   const canPrestige = useGameStore(selectors.canPrestige);
   const doPrestige = useGameStore((s) => s.doPrestige);
   const [confirming, setConfirming] = useState(false);
+  const amount = useGameStore((s) => s.buyAmount);
+  const setAmount = useGameStore((s) => s.setBuyAmount);
 
   if (highest < PRESTIGE_STAGE) {
     return (
@@ -86,8 +106,9 @@ export default function PrestigePanel() {
   return (
     <div className="panel-content">
       <div className="panel-note">
-        Prestij: bu maceradaki altın, kahraman ve yoldaşlar sıfırlanır; ulaştığın bölgeye göre
-        kristal kazanırsın. Kristaller ve buradaki geliştirmeler kalıcıdır.
+        Prestij: bu maceradaki altın, kahraman, eğitimler ve yoldaşlar sıfırlanır; ulaştığın
+        bölgeye göre kristal kazanırsın. Kristaller, buradaki geliştirmeler ve artifact'ler
+        kalıcıdır.
       </div>
 
       <div className="prestige-box">
@@ -126,8 +147,10 @@ export default function PrestigePanel() {
         </div>
       )}
 
+      <AmountToggle value={amount} onChange={setAmount} />
+
       {PRESTIGE_UPGRADES.map((up) => (
-        <UpgradeRow key={up.id} up={up} />
+        <UpgradeRow key={up.id} up={up} amount={amount} />
       ))}
     </div>
   );

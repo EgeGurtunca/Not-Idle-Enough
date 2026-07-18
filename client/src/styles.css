@@ -119,6 +119,33 @@ button:disabled {
   box-shadow: 0 0 14px -6px var(--arcane);
 }
 
+.op-btn {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px dashed var(--line);
+  background: none;
+  color: var(--bone-dim);
+  opacity: 0.7;
+}
+
+.op-btn.on {
+  border: 1px solid var(--blood);
+  color: var(--blood);
+  opacity: 1;
+  box-shadow: 0 0 12px -4px var(--blood);
+  animation: oppulse 1.6s ease-in-out infinite;
+}
+
+@keyframes oppulse {
+  50% {
+    box-shadow: 0 0 16px -2px var(--blood);
+  }
+}
+
 .record {
   font-size: 14px;
   color: var(--bone-dim);
@@ -264,16 +291,150 @@ button:disabled {
   }
 }
 
-.enemy-emoji {
-  font-size: clamp(80px, 17vmin, 140px);
-  line-height: 1;
-  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.55));
-  animation: hit 0.12s ease-out;
+/* 3B düşman sahnesi: Three.js canvas'ı sigil halkasının içinde */
+.creature-canvas {
+  width: 82%;
+  aspect-ratio: 1;
+  pointer-events: none;
 }
 
-@keyframes hit {
-  40% {
-    transform: scale(0.9) rotate(-3deg);
+.creature-canvas canvas {
+  display: block;
+}
+
+.enemy-spawn {
+  position: relative;
+  display: block;
+  animation: spawn 0.28s ease-out;
+}
+
+@keyframes spawn {
+  from {
+    transform: scale(0.35) translateY(36px);
+    opacity: 0;
+  }
+}
+
+.enemy-float {
+  display: block;
+  transform-style: preserve-3d;
+  animation: float3d 3.4s ease-in-out infinite;
+}
+
+@keyframes float3d {
+  0%,
+  100% {
+    transform: translateY(7px) rotateY(-12deg) rotateX(5deg);
+  }
+  50% {
+    transform: translateY(-11px) rotateY(12deg) rotateX(-5deg);
+  }
+}
+
+.enemy-emoji {
+  display: block;
+  font-size: clamp(80px, 17vmin, 140px);
+  line-height: 1;
+  filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.6));
+  animation: hit3d 0.16s ease-out;
+}
+
+@keyframes hit3d {
+  25% {
+    transform: scale(1.14, 0.8) rotate(-6deg);
+    filter: brightness(1.9) drop-shadow(0 0 18px rgba(240, 168, 60, 0.7));
+  }
+  65% {
+    transform: scale(0.86, 1.14) rotate(3deg);
+  }
+}
+
+.enemy-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: -14px;
+  width: 55%;
+  height: 15px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.55), transparent 72%);
+  animation: shadowpulse 3.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes shadowpulse {
+  0%,
+  100% {
+    transform: translateX(-50%) scale(1.08);
+    opacity: 0.75;
+  }
+  50% {
+    transform: translateX(-50%) scale(0.8);
+    opacity: 0.4;
+  }
+}
+
+/* Yanlarda duran yoldaşlar */
+.npc-side {
+  position: absolute;
+  top: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.npc-side.left {
+  left: 16px;
+  transform: translateY(-50%);
+}
+
+.npc-side.right {
+  right: 16px;
+  transform: translateY(-50%) scaleX(-1);
+}
+
+.npc-figure {
+  font-size: 31px;
+  line-height: 1;
+  pointer-events: auto;
+  filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.55));
+  animation: npcbob 2.6s ease-in-out infinite;
+}
+
+@keyframes npcbob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+/* Yoldaş mermileri */
+.projectile {
+  position: absolute;
+  z-index: 4;
+  font-size: 21px;
+  line-height: 1;
+  color: var(--ember);
+  pointer-events: none;
+  animation: fly 0.52s cubic-bezier(0.3, 0.1, 0.7, 1) forwards;
+}
+
+@keyframes fly {
+  from {
+    transform: translate(0, 0) scale(0.7) rotate(0deg);
+    opacity: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  to {
+    transform: translate(var(--dx), var(--dy)) scale(1.25) rotate(220deg);
+    opacity: 0;
   }
 }
 
@@ -696,6 +857,22 @@ button:disabled {
   font-size: 11.5px;
 }
 
+.odds-remaining {
+  opacity: 0.6;
+  font-size: 10px;
+}
+
+.artifact-detail-owned {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.artifact-detail-info {
+  flex: 1;
+  min-width: 0;
+}
+
 .pull-btn {
   display: flex;
   flex-direction: column;
@@ -831,6 +1008,151 @@ button:disabled {
   border: 1px solid color-mix(in srgb, var(--rarity) 55%, transparent);
 }
 
+/* ---- Kasa açılış ruleti ---- */
+.case-modal {
+  width: min(640px, 94vw);
+  padding: 22px;
+  border-radius: 15px;
+  background: var(--stone);
+  border: 1px solid var(--line);
+  box-shadow: 0 20px 60px -20px #000;
+}
+
+.case-title {
+  margin: 0 0 14px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+}
+
+.case-reel-wrap {
+  position: relative;
+  overflow: hidden;
+  height: 118px;
+  border-radius: 11px;
+  background: var(--night-deep);
+  border: 1px solid var(--line);
+}
+
+.case-reel-wrap::before,
+.case-reel-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 70px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.case-reel-wrap::before {
+  left: 0;
+  background: linear-gradient(90deg, var(--night-deep), transparent);
+}
+
+.case-reel-wrap::after {
+  right: 0;
+  background: linear-gradient(-90deg, var(--night-deep), transparent);
+}
+
+.case-marker {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--ember);
+  box-shadow: 0 0 10px var(--ember);
+  z-index: 4;
+}
+
+.case-marker::before,
+.case-marker::after {
+  content: '';
+  position: absolute;
+  left: -5px;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+}
+
+.case-marker::before {
+  top: 0;
+  border-top: 7px solid var(--ember);
+}
+
+.case-marker::after {
+  bottom: 0;
+  border-bottom: 7px solid var(--ember);
+}
+
+.case-reel {
+  position: absolute;
+  left: 0;
+  top: 13px;
+  display: flex;
+  gap: 8px;
+  will-change: transform;
+}
+
+.case-card {
+  flex: 0 0 88px;
+  height: 92px;
+  display: grid;
+  place-items: center;
+  font-size: 38px;
+  border-radius: 9px;
+  background: var(--stone-2);
+  border: 1px solid var(--line);
+  border-bottom: 3px solid var(--rarity);
+  transition: box-shadow 0.25s, transform 0.25s;
+}
+
+.case-card.winner {
+  box-shadow: 0 0 20px -2px var(--rarity);
+  transform: scale(1.05);
+}
+
+.case-result {
+  min-height: 118px;
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  opacity: 0.6;
+}
+
+.case-result.show {
+  opacity: 1;
+  animation: pullpop 0.3s ease-out;
+}
+
+.case-spinning {
+  align-self: center;
+  margin: auto;
+  font-family: var(--font-display);
+  font-size: 17px;
+  letter-spacing: 2px;
+  color: var(--bone-dim);
+}
+
+.case-result .pull-name {
+  font-size: 19px;
+}
+
+.case-buttons {
+  margin-top: 10px;
+  align-items: stretch;
+}
+
+.pull-btn.small {
+  font-size: 16px;
+  padding: 8px 18px;
+}
+
 /* ---- Modal ---- */
 .modal-backdrop {
   position: fixed;
@@ -903,9 +1225,27 @@ button:disabled {
   }
 }
 
+@media (max-width: 560px) {
+  .npc-figure {
+    font-size: 23px;
+  }
+
+  .npc-side.left {
+    left: 6px;
+  }
+
+  .npc-side.right {
+    right: 6px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sigil::after,
-  .sigil.urgent::before {
+  .sigil.urgent::before,
+  .enemy-float,
+  .enemy-shadow,
+  .enemy-spawn,
+  .npc-figure {
     animation: none;
   }
 

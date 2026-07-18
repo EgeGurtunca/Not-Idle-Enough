@@ -1,19 +1,23 @@
 import { create } from 'zustand';
 import {
-  KILLS_PER_STAGE, PRESTIGE_STAGE, MAX_STAGE, NPCS, PRESTIGE_UPGRADES, HERO_UPGRADES,
-  ARTIFACTS, RARITIES, ARTIFACT_MAX_LEVEL,
+  PRESTIGE_STAGE, MAX_STAGE, NPCS, PRESTIGE_UPGRADES, HERO_UPGRADES,
+  ARTIFACTS, ARTIFACT_MAX_LEVEL,
   creatureEmoji, minibossEmoji, bossEmoji,
 } from '../game/constants.js';
 import {
   isBossStage, creatureHp, creatureGold, bossHp, bossGold,
   clickDamage, heroLevelCost, heroUpgradeCost, critChance, critMultiplier,
   npcLevelCost, totalDps, bulkCost, maxAffordable, goldMultiplier, bossTime,
-  crystalGain, prestigeUpgradeCost, startingGold, pullCost,
+  crystalGain, prestigeUpgradeCost, startingGold, pullCost, killsRequired,
+  rarityOdds, artifactUpgradeCost,
 } from '../game/formulas.js';
+
+let enemySeq = 0; // doğuş animasyonu için her düşmana benzersiz kimlik
 
 function makeCreature(stage) {
   const seed = Math.floor(Math.random() * 1000);
   return {
+    id: ++enemySeq,
     kind: 'creature',
     name: 'Yaratık',
     emoji: creatureEmoji(stage, seed),
@@ -25,6 +29,7 @@ function makeCreature(stage) {
 function makeBoss(stage) {
   const big = isBossStage(stage);
   return {
+    id: ++enemySeq,
     kind: 'boss',
     name: big ? 'BÜYÜK BOSS' : 'Mini Boss',
     big,
@@ -61,13 +66,23 @@ export const useGameStore = create((set, get) => ({
   loaded: false,
   offlineReport: null, // { gold, seconds }
   lastPull: null, // { id, level, isNew }
+  buyAmount: 1, // 1 | 10 | 'max' — tüm panellerde ortak, kayda yazılır
+  opMode: false, // test modu: klik hasarı 1Qi (kayda yazılmaz)
+
+  setBuyAmount(amount) {
+    set({ buyAmount: amount });
+  },
+
+  toggleOp() {
+    set({ opMode: !get().opMode });
+  },
 
   // ---- Savaş ----
   // Dönüş: { dmg, crit } — floater gösterimi için
   clickAttack() {
     const s = get();
     if (!s.enemy || !s.loaded) return null;
-    let dmg = clickDamage(s.heroLevel, s.prestigeLevels, s.artifacts);
+    let dmg = s.opMode ? 1e18 : clickDamage(s.heroLevel, s.prestigeLevels, s.artifacts);
     const crit = Math.random() < critChance(s.heroUpgrades, s.artifacts);
     if (crit) dmg *= critMultiplier(s.heroUpgrades, s.artifacts);
     get()._applyDamage(dmg);
@@ -99,7 +114,8 @@ export const useGameStore = create((set, get) => ({
       return;
     }
     // Düşman öldü
-    const gmult = goldMultiplier(s.prestigeLevels, s.heroUpgrades, s.artifacts);
+    const gmult =
+      goldMultiplier(s.prestigeLevels, s.heroUpgrades, s.artifacts) * (s.opMode ? 1000 : 1);
     if (s.enemy.kind === 'boss') {
       const nextStage = Math.min(s.stage + 1, MAX_STAGE);
       set({
@@ -113,8 +129,9 @@ export const useGameStore = create((set, get) => ({
         enemy: makeCreature(nextStage),
       });
     } else {
-      const kills = Math.min(s.kills + 1, KILLS_PER_STAGE);
-      const justFilled = s.kills === KILLS_PER_STAGE - 1; // 9 -> 10 geçişi
+      const required = killsRequired(s.prestigeLevels);
+      const kills = Math.min(s.kills + 1, required);
+      const justFilled = s.kills === required - 1; // sayacın dolduğu an
       const gold = s.gold + creatureGold(s.stage) * gmult;
       if (justFilled) {
         // İlk kez 10'a ulaşıldı: boss otomatik gelir
@@ -133,7 +150,7 @@ export const useGameStore = create((set, get) => ({
   // Kill sayacı doluyken (başarısız denemeden sonra) tekrar boss'a gir
   challengeBoss() {
     const s = get();
-    if (s.mode !== 'farm' || s.kills < KILLS_PER_STAGE) return;
+    if (s.mode !== 'farm' || s.kills < killsRequired(s.prestigeLevels)) return;
     set({
       mode: 'boss',
       enemy: makeBoss(s.stage),
@@ -212,30 +229,26 @@ export const useGameStore = create((set, get) => ({
   },
 
   // ---- Artifact çekilişi ----
+  // Rarity şansları kalan havuza göre yeniden normalize edilir: maks seviyeye
+  // ulaşan artifact'ler havuzdan düşer, tükenen rarity'nin şansı diğerlerine dağılır.
   pullArtifact() {
     const s = get();
     const cost = pullCost(s.totalPulls);
     if (s.crystals < cost) return;
-    // Rarity zarı
-    const roll = Math.random() * 100;
-    let acc = 0;
-    let rarityId = RARITIES[0].id;
-    for (const r of RARITIES) {
-      acc += r.chance;
-      if (roll < acc) {
-        rarityId = r.id;
+    const odds = rarityOdds(s.artifacts);
+    if (odds.length === 0) return; // koleksiyon tamam
+    let roll = Math.random() * 100;
+    let rarityId = odds[odds.length - 1].id;
+    for (const o of odds) {
+      if (roll < o.chance) {
+        rarityId = o.id;
         break;
       }
+      roll -= o.chance;
     }
-    // O rarity'de maksimum seviyeye ulaşmamış bir artifact seç;
-    // hepsi maks ise havuzun genelinden seç; koleksiyon tamamsa çekiliş yapılmaz.
-    let pool = ARTIFACTS.filter(
+    const pool = ARTIFACTS.filter(
       (a) => a.rarity === rarityId && (s.artifacts[a.id] ?? 0) < ARTIFACT_MAX_LEVEL
     );
-    if (pool.length === 0) {
-      pool = ARTIFACTS.filter((a) => (s.artifacts[a.id] ?? 0) < ARTIFACT_MAX_LEVEL);
-    }
-    if (pool.length === 0) return; // her şey maks seviyede
     const pick = pool[Math.floor(Math.random() * pool.length)];
     const newLevel = (s.artifacts[pick.id] ?? 0) + 1;
     set({
@@ -246,10 +259,25 @@ export const useGameStore = create((set, get) => ({
     });
   },
 
+  // Kristalle doğrudan geliştirme (sahip olunan, maks olmayan artifact)
+  upgradeArtifact(artifactId) {
+    const s = get();
+    const art = ARTIFACTS.find((a) => a.id === artifactId);
+    if (!art) return;
+    const level = s.artifacts[artifactId] ?? 0;
+    if (level < 1 || level >= ARTIFACT_MAX_LEVEL) return;
+    const cost = artifactUpgradeCost(art, level);
+    if (s.crystals < cost) return;
+    set({
+      crystals: s.crystals - cost,
+      artifacts: { ...s.artifacts, [artifactId]: level + 1 },
+    });
+  },
+
   // ---- Prestij ----
   doPrestige() {
     const s = get();
-    const gain = crystalGain(s.runHighestStage, s.artifacts);
+    const gain = crystalGain(s.runHighestStage, s.artifacts) * (s.opMode ? 1000 : 1);
     if (gain <= 0) return;
     set({
       ...freshRunState(s.prestigeLevels),
@@ -304,6 +332,7 @@ export const useGameStore = create((set, get) => ({
       artifacts: s.artifacts,
       totalPulls: s.totalPulls,
       totalPrestiges: s.totalPrestiges,
+      buyAmount: s.buyAmount,
     };
   },
 
@@ -323,6 +352,7 @@ export const useGameStore = create((set, get) => ({
       artifacts: data.artifacts ?? {},
       totalPulls: data.totalPulls ?? 0,
       totalPrestiges: data.totalPrestiges ?? 0,
+      buyAmount: data.buyAmount ?? 1,
       mode: 'farm',
       bossTimeLeft: 0,
       enemy: makeCreature(stage),
@@ -346,7 +376,7 @@ export const selectors = {
   totalDps: (s) => totalDps(s.npcLevels, s.prestigeLevels, s.artifacts),
   critChance: (s) => critChance(s.heroUpgrades, s.artifacts),
   critMultiplier: (s) => critMultiplier(s.heroUpgrades, s.artifacts),
-  crystalGain: (s) => crystalGain(s.runHighestStage, s.artifacts),
+  crystalGain: (s) => crystalGain(s.runHighestStage, s.artifacts) * (s.opMode ? 1000 : 1),
   prestigeUnlocked: (s) => s.highestStage >= PRESTIGE_STAGE,
   canPrestige: (s) => s.runHighestStage >= PRESTIGE_STAGE,
 };

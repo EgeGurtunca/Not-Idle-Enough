@@ -3,8 +3,9 @@ import {
   MINIBOSS_HP_MULT, MINIBOSS_GOLD_MULT, BOSS_HP_MULT, BOSS_GOLD_MULT,
   HERO_BASE_COST, HERO_COST_GROWTH, MILESTONE_EVERY, MILESTONE_MULT,
   NPC_LEVEL_COST_FACTOR, NPC_COST_GROWTH,
-  BOSS_TIME_BASE, PRESTIGE_STAGE, NPCS, PRESTIGE_UPGRADES, HERO_UPGRADES,
-  ARTIFACTS, PULL_COST_BASE, PULL_COST_GROWTH,
+  BOSS_TIME_BASE, PRESTIGE_STAGE, KILLS_PER_STAGE, NPCS, PRESTIGE_UPGRADES, HERO_UPGRADES,
+  ARTIFACTS, RARITIES, ARTIFACT_MAX_LEVEL, PULL_COST_BASE, PULL_COST_GROWTH,
+  ARTIFACT_UPGRADE_BASE, ARTIFACT_UPGRADE_GROWTH,
 } from './constants.js';
 
 export const isBossStage = (stage) => stage % 10 === 0;
@@ -34,7 +35,7 @@ const milestoneMult = (level) => Math.pow(MILESTONE_MULT, Math.floor(level / MIL
 export function clickDamage(heroLevel, prestigeLevels = {}, artifacts = {}) {
   const keskin = prestigeLevels?.keskinVurus ?? 0;
   const art = artifactBonuses(artifacts);
-  return (1 + heroLevel) * milestoneMult(heroLevel) * (1 + 0.25 * keskin) * (1 + art.click);
+  return (1 + heroLevel) * milestoneMult(heroLevel) * (1 + 0.5 * keskin) * (1 + art.click);
 }
 
 export const heroLevelCost = (level) => HERO_BASE_COST * Math.pow(HERO_COST_GROWTH, level);
@@ -59,7 +60,7 @@ export function npcDps(npc, level, prestigeLevels = {}, artifacts = {}) {
   if (level <= 0) return 0;
   const komutan = prestigeLevels?.komutanlik ?? 0;
   const art = artifactBonuses(artifacts);
-  return npc.baseDps * level * milestoneMult(level) * (1 + 0.25 * komutan) * (1 + art.dps);
+  return npc.baseDps * level * milestoneMult(level) * (1 + 0.5 * komutan) * (1 + art.dps);
 }
 
 export function totalDps(npcLevels = {}, prestigeLevels = {}, artifacts = {}) {
@@ -99,7 +100,7 @@ export function goldMultiplier(prestigeLevels = {}, heroUpgrades = {}, artifacts
   const altinP = prestigeLevels?.altinDokunus ?? 0;
   const bereket = heroUpgrades?.altinBereketi ?? 0;
   const art = artifactBonuses(artifacts);
-  return (1 + 0.2 * altinP) * (1 + 0.05 * bereket) * (1 + art.gold);
+  return (1 + 0.35 * altinP) * (1 + 0.05 * bereket) * (1 + art.gold);
 }
 
 // ---- Boss süresi ----
@@ -107,6 +108,12 @@ export function bossTime(prestigeLevels = {}, artifacts = {}) {
   const zaman = prestigeLevels?.zamanBukucu ?? 0;
   const art = artifactBonuses(artifacts);
   return BOSS_TIME_BASE + 2 * zaman + art.bossTime;
+}
+
+// ---- Boss için gereken yaratık sayısı (Sürek Avı ile azalır) ----
+export function killsRequired(prestigeLevels = {}) {
+  const surek = prestigeLevels?.surekAvi ?? 0;
+  return Math.max(1, KILLS_PER_STAGE - surek);
 }
 
 // ---- Prestij ----
@@ -123,6 +130,27 @@ export function prestigeUpgradeCost(upgrade, level) {
 // ---- Sandık fiyatı: her çekilişte artar ----
 export function pullCost(totalPulls) {
   return Math.floor(PULL_COST_BASE * Math.pow(PULL_COST_GROWTH, totalPulls));
+}
+
+// ---- Çekiliş oranları: maks seviyeye ulaşan artifact'ler havuzdan düşer,
+// kalan rarity'lerin şansları 100'e yeniden normalize edilir ----
+export function rarityOdds(artifacts = {}) {
+  const available = RARITIES.map((r) => ({
+    ...r,
+    remaining: ARTIFACTS.filter(
+      (a) => a.rarity === r.id && (artifacts[a.id] ?? 0) < ARTIFACT_MAX_LEVEL
+    ).length,
+  })).filter((r) => r.remaining > 0);
+  const total = available.reduce((sum, r) => sum + r.chance, 0);
+  if (total === 0) return [];
+  return available.map((r) => ({ ...r, chance: (r.chance / total) * 100 }));
+}
+
+// ---- Kristalle artifact geliştirme (level -> level+1 maliyeti) ----
+export function artifactUpgradeCost(artifact, level) {
+  return Math.floor(
+    ARTIFACT_UPGRADE_BASE[artifact.rarity] * Math.pow(ARTIFACT_UPGRADE_GROWTH, level - 1)
+  );
 }
 
 export function startingGold(prestigeLevels = {}) {

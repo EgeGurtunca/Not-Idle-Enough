@@ -1,17 +1,30 @@
-import { useState } from 'react';
 import { useGameStore, selectors } from '../store/gameStore.js';
 import { MILESTONE_EVERY, HERO_UPGRADES } from '../game/constants.js';
 import { heroLevelCost, heroUpgradeCost, bulkCost, maxAffordable } from '../game/formulas.js';
 import { fmt } from '../utils/format.js';
 import AmountToggle from './AmountToggle.jsx';
 
-function UpgradeRow({ up }) {
+function UpgradeRow({ up, amount }) {
   const gold = useGameStore((s) => s.gold);
   const level = useGameStore((s) => s.heroUpgrades[up.id] ?? 0);
-  const buy = useGameStore((s) => s.buyHeroUpgrade);
+  const buyLevels = useGameStore((s) => s.buyHeroUpgradeLevels);
+  const buyMax = useGameStore((s) => s.buyHeroUpgradeMax);
 
   const maxed = level >= up.maxLevel;
-  const cost = maxed ? 0 : heroUpgradeCost(up, level);
+  const remaining = up.maxLevel - level;
+  const costFn = (l) => heroUpgradeCost(up, l);
+
+  let count = 0;
+  let cost = 0;
+  if (!maxed) {
+    if (amount === 'max') {
+      ({ count, cost } = maxAffordable(costFn, level, gold, Math.min(1000, remaining)));
+    } else {
+      count = Math.min(amount, remaining);
+      cost = bulkCost(costFn, level, count);
+    }
+  }
+  const affordable = amount === 'max' ? count > 0 : count > 0 && gold >= cost;
 
   return (
     <div className="row">
@@ -29,8 +42,13 @@ function UpgradeRow({ up }) {
       {maxed ? (
         <span className="maxed">Tamamlandı</span>
       ) : (
-        <button type="button" className="buy" disabled={gold < cost} onClick={() => buy(up.id)}>
-          Geliştir
+        <button
+          type="button"
+          className="buy"
+          disabled={!affordable}
+          onClick={() => (amount === 'max' ? buyMax(up.id) : buyLevels(up.id, amount))}
+        >
+          {amount === 'max' ? `Maks ×${count}` : `Al ×${count}`}
           <span className="buy-cost">🪙 {fmt(cost)}</span>
         </button>
       )}
@@ -46,7 +64,8 @@ export default function HeroPanel() {
   const critMult = useGameStore(selectors.critMultiplier);
   const buyHeroLevels = useGameStore((s) => s.buyHeroLevels);
   const buyHeroMax = useGameStore((s) => s.buyHeroMax);
-  const [amount, setAmount] = useState(1);
+  const amount = useGameStore((s) => s.buyAmount);
+  const setAmount = useGameStore((s) => s.setBuyAmount);
 
   const nextMilestone = (Math.floor(heroLevel / MILESTONE_EVERY) + 1) * MILESTONE_EVERY;
 
@@ -96,7 +115,7 @@ export default function HeroPanel() {
       </div>
 
       {HERO_UPGRADES.map((up) => (
-        <UpgradeRow key={up.id} up={up} />
+        <UpgradeRow key={up.id} up={up} amount={amount} />
       ))}
     </div>
   );
