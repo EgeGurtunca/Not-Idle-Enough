@@ -45,6 +45,47 @@ export const HERO_UPGRADES = [
   },
 ];
 
+// ---- Aktif yetenekler ----
+export const SKILLS = [
+  { id: 'ofke',         name: 'Öfke',          emoji: '😤', desc: 'Klik hasarı ×5',        duration: 10, cooldown: 120, unlockStage: 10,  mult: 5 },
+  { id: 'altinYagmuru', name: 'Altın Yağmuru', emoji: '🌧️', desc: 'Altın kazancı ×3',      duration: 30, cooldown: 180, unlockStage: 25,  mult: 3 },
+  { id: 'zamanDonmasi', name: 'Zaman Donması', emoji: '🧊', desc: 'Boss süresi donar',     duration: 8,  cooldown: 150, unlockStage: 40 },
+  { id: 'savasEmri',    name: 'Savaş Emri',    emoji: '📣', desc: 'NPC hasarı ×3',         duration: 15, cooldown: 180, unlockStage: 60,  mult: 3 },
+];
+
+// ---- Başarımlar (her biri kalıcı +%2 hasar ve +%2 altın verir) ----
+export const ACHIEVEMENT_BONUS = 0.02;
+export const ACHIEVEMENTS = [
+  { id: 'kill1',    name: 'Çaylak Avcı',        emoji: '🗡️', desc: '100 yaratık kes',            stat: 'totalKills',      threshold: 100 },
+  { id: 'kill2',    name: 'Tecrübeli Avcı',     emoji: '⚔️', desc: '2.500 yaratık kes',          stat: 'totalKills',      threshold: 2500 },
+  { id: 'kill3',    name: 'Kıdemli Avcı',       emoji: '🏹', desc: '25.000 yaratık kes',         stat: 'totalKills',      threshold: 25000 },
+  { id: 'kill4',    name: 'Efsane Avcı',        emoji: '🐲', desc: '250.000 yaratık kes',        stat: 'totalKills',      threshold: 250000 },
+  { id: 'boss1',    name: 'Boss Eziyeti',       emoji: '👹', desc: '10 boss kes',                stat: 'totalBossKills',  threshold: 10 },
+  { id: 'boss2',    name: 'Boss Kabusu',        emoji: '😈', desc: '100 boss kes',               stat: 'totalBossKills',  threshold: 100 },
+  { id: 'boss3',    name: 'Boss Celladı',       emoji: '💀', desc: '1.000 boss kes',             stat: 'totalBossKills',  threshold: 1000 },
+  { id: 'click1',   name: 'Parmak Isınması',    emoji: '👆', desc: '500 kez tıkla',              stat: 'totalClicks',     threshold: 500 },
+  { id: 'click2',   name: 'Klik Ustası',        emoji: '🖱️', desc: '5.000 kez tıkla',            stat: 'totalClicks',     threshold: 5000 },
+  { id: 'click3',   name: 'Çelik Parmak',       emoji: '🦾', desc: '50.000 kez tıkla',           stat: 'totalClicks',     threshold: 50000 },
+  { id: 'crit1',    name: 'Şanslı Vuruş',       emoji: '🎯', desc: '100 kritik vur',             stat: 'totalCrits',      threshold: 100 },
+  { id: 'crit2',    name: 'Kritik Makinesi',    emoji: '💢', desc: '2.500 kritik vur',           stat: 'totalCrits',      threshold: 2500 },
+  { id: 'stage1',   name: 'Yolcu',              emoji: '🥾', desc: 'Bölge 25\'e ulaş',           stat: 'highestStage',    threshold: 25 },
+  { id: 'stage2',   name: 'Kaşif',              emoji: '🗺️', desc: 'Bölge 50\'ye ulaş',          stat: 'highestStage',    threshold: 50 },
+  { id: 'stage3',   name: 'Fatih',              emoji: '🏰', desc: 'Bölge 100\'e ulaş',          stat: 'highestStage',    threshold: 100 },
+  { id: 'stage4',   name: 'Derinlere',          emoji: '🕳️', desc: 'Bölge 250\'ye ulaş',         stat: 'highestStage',    threshold: 250 },
+  { id: 'stage5',   name: 'Zirvenin Sahibi',    emoji: '⛰️', desc: 'Bölge 500\'e ulaş',          stat: 'highestStage',    threshold: 500 },
+  { id: 'prest1',   name: 'Yeniden Doğuş',      emoji: '✦',  desc: 'İlk prestijini at',          stat: 'totalPrestiges',  threshold: 1 },
+  { id: 'prest2',   name: 'Döngü Ustası',       emoji: '🔄', desc: '5 kez prestij at',           stat: 'totalPrestiges',  threshold: 5 },
+  { id: 'prest3',   name: 'Ebedi Döngü',        emoji: '♾️', desc: '15 kez prestij at',          stat: 'totalPrestiges',  threshold: 15 },
+  { id: 'art1',     name: 'Koleksiyoncu Çırağı',emoji: '🗝️', desc: '5 artifact topla',           stat: 'ownedArtifacts',  threshold: 5 },
+  { id: 'art2',     name: 'Koleksiyoncu',       emoji: '🎁', desc: '15 artifact topla',          stat: 'ownedArtifacts',  threshold: 15 },
+  { id: 'art3',     name: 'Kadim Koleksiyon',   emoji: '🏺', desc: '30 artifact topla',          stat: 'ownedArtifacts',  threshold: 30 },
+  { id: 'pull1',    name: 'Sandık Meraklısı',   emoji: '📦', desc: '10 sandık aç',               stat: 'totalPulls',      threshold: 10 },
+  { id: 'pull2',    name: 'Sandık Bağımlısı',   emoji: '🎰', desc: '30 sandık aç',               stat: 'totalPulls',      threshold: 30 },
+  { id: 'gold1',    name: 'Milyarder',          emoji: '🪙', desc: 'Toplam 1B altın kazan',      stat: 'totalGoldEarned', threshold: 1e9 },
+  { id: 'gold2',    name: 'Kentilyoner',        emoji: '💰', desc: 'Toplam 1Qi altın kazan',     stat: 'totalGoldEarned', threshold: 1e18 },
+  { id: 'gold3',    name: 'Altın Tanrısı',      emoji: '👑', desc: 'Toplam 1e30 altın kazan',    stat: 'totalGoldEarned', threshold: 1e30 },
+];
+
 // ---- NPC'ler (Yoldaşlar) ----
 // projectile: savaş alanında fırlattıkları mermi (her NPC'ninki farklı)
 export const NPCS = [
@@ -160,20 +201,56 @@ export const ARTIFACTS = [
   { id: 'ejderKalbi',    name: 'Kadim Ejder Kalbi',    emoji: '❤️‍🔥', rarity: 'efsanevi', effect: 'dps',   value: 10.00 },
 ];
 
-// ---- Görseller ----
-// Her 10 stage'lik dilim için yaratık seti; dilimler biterse baştan döner.
+// ---- Yaratık kataloğu ----
+// Her 10 stage'lik dilimin 3 klasik RPG yaratığı vardır; dilimler biterse baştan döner.
+// look: CreatureCanvas'ın 3B modeli kurarken kullandığı özellik bayrakları.
 export const CREATURE_TIERS = [
-  ['🐀', '🦇', '🐍'],
-  ['🐺', '🐗', '🕷️'],
-  ['👺', '🧌', '🦊'],
-  ['💀', '🧟', '👻'],
-  ['🦂', '🦎', '🐊'],
-  ['🧛', '🧜', '🧞'],
-  ['👹', '🗿', '🦅'],
-  ['🐉', '🐲', '🦖'],
+  [
+    { id: 'fare',       name: 'Lağım Faresi',      emoji: '🐀', look: { color: '#8a8078', ears: 'round', snout: 'point', tail: 'thin' } },
+    { id: 'yarasa',     name: 'Vampir Yarasa',     emoji: '🦇', look: { color: '#5c5470', shape: 'small', ears: 'point', wings: true, fangs: true } },
+    { id: 'yilan',      name: 'Zehirli Yılan',     emoji: '🐍', look: { color: '#5f9e58', shape: 'serpent', eyes: { color: '#ffd84d' } } },
+  ],
+  [
+    { id: 'kurt',       name: 'Aç Kurt',           emoji: '🐺', look: { color: '#7d8494', ears: 'point', snout: 'point', tail: 'thin', fangs: true } },
+    { id: 'domuz',      name: 'Yaban Domuzu',      emoji: '🐗', look: { color: '#8f6b4f', shape: 'big', snout: 'tusk' } },
+    { id: 'orumcek',    name: 'Dev Örümcek',       emoji: '🕷️', look: { color: '#3f3a4a', shape: 'small', legs8: true, eyes: { count: 4, color: '#e4574b' } } },
+  ],
+  [
+    { id: 'goblin',     name: 'Goblin',            emoji: '👺', look: { color: '#69a15c', ears: 'point', fangs: true } },
+    { id: 'trol',       name: 'Mağara Trolü',      emoji: '🧌', look: { color: '#7a8f6a', shape: 'big', horns: 1, fangs: true } },
+    { id: 'tilki',      name: 'Hilebaz Tilki',     emoji: '🦊', look: { color: '#c97f3c', ears: 'point', snout: 'point', tail: 'thin' } },
+  ],
+  [
+    { id: 'iskelet',    name: 'İskelet Savaşçı',   emoji: '💀', look: { color: '#d8d2c0', eyes: { socket: true } } },
+    { id: 'zombi',      name: 'Zombi',             emoji: '🧟', look: { color: '#8aa07a', fangs: true, glowEyes: '#b6ff8a' } },
+    { id: 'hortlak',    name: 'Hortlak',           emoji: '👻', look: { color: '#cfd4e8', shape: 'tall', translucent: true } },
+  ],
+  [
+    { id: 'akrep',      name: 'Dev Akrep',         emoji: '🦂', look: { color: '#8f4a3c', shape: 'long', claws: true, stinger: true } },
+    { id: 'kertenkele', name: 'Kertenkele Savaşçı',emoji: '🦎', look: { color: '#6faf5c', shape: 'long', tail: 'thin' } },
+    { id: 'timsah',     name: 'Bataklık Timsahı',  emoji: '🐊', look: { color: '#4f7f4a', shape: 'long', snout: 'long' } },
+  ],
+  [
+    { id: 'vampir',     name: 'Vampir Kont',       emoji: '🧛', look: { color: '#cbb9d6', fangs: true, glowEyes: '#e4574b' } },
+    { id: 'kurtadam',   name: 'Kurtadam',          emoji: '🐺', look: { color: '#5a5f6e', shape: 'big', ears: 'point', snout: 'point', fangs: true, claws: true, glowEyes: '#f0a83c' } },
+    { id: 'cadi',       name: 'Kara Cadı',         emoji: '🧙‍♀️', look: { color: '#9d7be8', hat: true } },
+  ],
+  [
+    { id: 'dev',        name: 'Dağ Devi',          emoji: '👹', look: { color: '#b06a4a', shape: 'big', horns: 1, fangs: true } },
+    { id: 'golem',      name: 'Taş Golem',         emoji: '🗿', look: { color: '#8d8a84', shape: 'boxy', glowEyes: '#f0a83c' } },
+    { id: 'sahin',      name: 'Kızıl Şahin',       emoji: '🦅', look: { color: '#a3763f', wings: true, snout: 'point' } },
+  ],
+  [
+    { id: 'wyvern',     name: 'Genç Wyvern',       emoji: '🐉', look: { color: '#c05548', horns: 2, wings: true, tail: 'spike' } },
+    { id: 'kadimejder', name: 'Kadim Ejder',       emoji: '🐲', look: { color: '#8f3f3f', shape: 'big', horns: 2, wings: true, tail: 'spike' } },
+    { id: 'rex',        name: 'Kemikli Rex',       emoji: '🦖', look: { color: '#6f9e4f', shape: 'big', snout: 'long', fangs: true, tail: 'spike' } },
+  ],
 ];
 
-export const MINIBOSS_EMOJIS = ['🐗', '🐺', '🧌', '💀', '🐊', '🧛', '🗿', '🐲'];
+// id -> tip (CreatureCanvas hızlı erişimi)
+export const CREATURE_TYPES = Object.fromEntries(
+  CREATURE_TIERS.flat().map((t) => [t.id, t])
+);
 
 export const ZONE_NAMES = [
   'Çürük Lağımlar',
@@ -186,21 +263,31 @@ export const ZONE_NAMES = [
   'Ejder İni',
 ];
 
-export function zoneName(stage) {
-  return ZONE_NAMES[Math.floor((stage - 1) / 10) % ZONE_NAMES.length];
+// Her dilimin büyük boss adı (bölge temasıyla uyumlu)
+export const BOSS_NAMES = [
+  'Lağım Hükümdarı',
+  'Alfa Kurt',
+  'Goblin Kralı',
+  'Kemik Lordu',
+  'Bataklık Canavarı',
+  'Karanlık Kont',
+  'Taş Kral',
+  'Kadim Ejderha',
+];
+
+function tierIndex(stage) {
+  return Math.floor((stage - 1) / 10) % CREATURE_TIERS.length;
 }
 
-export const BOSS_EMOJIS = ['👹', '🐉', '😈', '💀', '🐲', '🦖', '👿', '🧟', '🗿', '🧛'];
+export function zoneName(stage) {
+  return ZONE_NAMES[tierIndex(stage)];
+}
 
-export function creatureEmoji(stage, seed) {
-  const tier = CREATURE_TIERS[Math.floor((stage - 1) / 10) % CREATURE_TIERS.length];
+export function creatureType(stage, seed) {
+  const tier = CREATURE_TIERS[tierIndex(stage)];
   return tier[seed % tier.length];
 }
 
-export function minibossEmoji(stage) {
-  return MINIBOSS_EMOJIS[Math.floor((stage - 1) / 10) % MINIBOSS_EMOJIS.length];
-}
-
-export function bossEmoji(stage) {
-  return BOSS_EMOJIS[(Math.floor(stage / 10) - 1) % BOSS_EMOJIS.length];
+export function bossName(stage) {
+  return BOSS_NAMES[tierIndex(stage)];
 }

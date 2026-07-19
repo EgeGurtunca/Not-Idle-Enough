@@ -32,7 +32,7 @@ function effectText(art, level) {
   return `${EFFECT_LABELS[art.effect]} +%${Math.round(art.value * lv * 100)}`;
 }
 
-// Rulet dolgu kartları: kalan havuza normalize edilmiş gerçek oranlarla
+// Rulet dolgu kartları: kalan (sahip olunmayan) havuza normalize edilmiş oranlarla
 function weightedRandomArtifact(artifacts) {
   const odds = rarityOdds(artifacts);
   if (odds.length === 0) return ARTIFACTS[0];
@@ -46,12 +46,12 @@ function weightedRandomArtifact(artifacts) {
     roll -= o.chance;
   }
   const pool = ARTIFACTS.filter(
-    (a) => a.rarity === rarityId && (artifacts[a.id] ?? 0) < ARTIFACT_MAX_LEVEL
+    (a) => a.rarity === rarityId && (artifacts[a.id] ?? 0) === 0
   );
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-function CaseOpening({ opening, nextCost, crystals, allMaxed, onAgain, onClose }) {
+function CaseOpening({ opening, nextCost, crystals, allOwned, onAgain, onClose }) {
   const { reel, result, seq } = opening;
   const wrapRef = useRef(null);
   const [offset, setOffset] = useState(0);
@@ -124,7 +124,7 @@ function CaseOpening({ opening, nextCost, crystals, allMaxed, onAgain, onClose }
                 <button
                   type="button"
                   className="pull-btn small"
-                  disabled={crystals < nextCost || allMaxed}
+                  disabled={crystals < nextCost || allOwned}
                   onClick={onAgain}
                 >
                   🗝️ Tekrar Aç
@@ -153,7 +153,7 @@ export default function ArtifactPanel() {
 
   const cost = pullCost(totalPulls);
   const ownedCount = ARTIFACTS.filter((a) => (artifacts[a.id] ?? 0) > 0).length;
-  const allMaxed = ARTIFACTS.every((a) => (artifacts[a.id] ?? 0) >= ARTIFACT_MAX_LEVEL);
+  const allOwned = ownedCount === ARTIFACTS.length;
   const selected = selectedId ? ARTIFACTS.find((a) => a.id === selectedId) : null;
 
   function startPull() {
@@ -171,9 +171,10 @@ export default function ArtifactPanel() {
   return (
     <div className="panel-content">
       <div className="panel-note">
-        Kristallerle kadim sandıklar aç; içinden {ARTIFACTS.length} artifact'lik havuzdan rastgele
-        biri çıkar. Her açılışta sandığın fiyatı biraz artar. Kopyalar artifact'i güçlendirir
-        (maks sv {ARTIFACT_MAX_LEVEL}). Artifact'ler prestijde <strong>kaybolmaz</strong>.
+        Kristallerle kadim sandıklar aç; her sandıktan koleksiyonunda <strong>olmayan</strong> bir
+        artifact çıkar ve sahip oldukların loot havuzundan düşer. Her açılışta sandığın fiyatı
+        biraz artar. Seviye atlatmak için artifact'e tıklayıp kristalle geliştir (maks sv{' '}
+        {ARTIFACT_MAX_LEVEL}). Artifact'ler prestijde <strong>kaybolmaz</strong>.
       </div>
 
       <div className="odds-row">
@@ -188,14 +189,17 @@ export default function ArtifactPanel() {
       <button
         type="button"
         className="pull-btn"
-        disabled={crystals < cost || allMaxed}
+        disabled={crystals < cost || allOwned}
         onClick={startPull}
       >
         🗝️ Sandık Aç
         <span className="buy-cost">💎 {fmt(cost)}</span>
       </button>
-      {allMaxed && (
-        <div className="panel-note subtle">Koleksiyon tamamlandı — hepsi maks seviyede!</div>
+      {allOwned && (
+        <div className="panel-note subtle">
+          Koleksiyon tamamlandı — {ARTIFACTS.length}/{ARTIFACTS.length}! Artık geliştirmeler
+          kristalle yapılır.
+        </div>
       )}
 
       <div className="collection-head">
@@ -272,7 +276,7 @@ export default function ArtifactPanel() {
           opening={opening}
           nextCost={pullCost(totalPulls)}
           crystals={crystals}
-          allMaxed={allMaxed}
+          allOwned={allOwned}
           onAgain={startPull}
           onClose={() => setOpening(null)}
         />

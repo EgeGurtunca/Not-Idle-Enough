@@ -218,6 +218,26 @@ button:disabled {
 
 .enemy-name-row {
   min-height: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.enemy-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--ember);
+  color: var(--ember);
+}
+
+.enemy-badge.big {
+  border-color: var(--blood);
+  color: var(--blood);
+  box-shadow: 0 0 10px -3px var(--blood);
 }
 
 .enemy-name {
@@ -372,6 +392,149 @@ button:disabled {
     transform: translateX(-50%) scale(0.8);
     opacity: 0.4;
   }
+}
+
+/* Aktif yetenek barı */
+.skill-bar {
+  display: flex;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.skill {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--stone);
+  border: 1px solid var(--line);
+  font-size: 24px;
+  overflow: hidden;
+  transition: transform 0.08s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.skill:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: var(--ember);
+}
+
+.skill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: conic-gradient(rgba(10, 8, 16, 0.72) calc(var(--cd, 0) * 360deg), transparent 0);
+  pointer-events: none;
+}
+
+.skill.active {
+  border-color: var(--ember);
+  box-shadow: 0 0 16px -4px var(--ember);
+  animation: skillpulse 1s ease-in-out infinite;
+}
+
+@keyframes skillpulse {
+  50% {
+    box-shadow: 0 0 22px -2px var(--ember);
+  }
+}
+
+.skill.locked {
+  opacity: 0.45;
+}
+
+.skill:disabled {
+  cursor: default;
+}
+
+.skill-time {
+  position: absolute;
+  right: 4px;
+  bottom: 2px;
+  z-index: 1;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ember);
+  text-shadow: 0 1px 2px #000;
+}
+
+.skill-time.cd {
+  color: var(--bone);
+}
+
+/* Toast bildirimi */
+.toast {
+  position: fixed;
+  top: 62px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 70;
+  padding: 11px 20px;
+  border-radius: 12px;
+  background: var(--stone-2);
+  border: 1px solid var(--ember);
+  font-weight: 800;
+  font-size: 14.5px;
+  box-shadow: 0 8px 30px -8px #000, 0 0 20px -8px var(--ember);
+  animation: toastin 0.3s ease-out;
+}
+
+@keyframes toastin {
+  from {
+    transform: translate(-50%, -14px);
+    opacity: 0;
+  }
+}
+
+/* Başarımlar */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--bone-dim);
+}
+
+.ach-row.unlocked {
+  border-color: rgba(127, 191, 142, 0.4);
+}
+
+.ach-progress {
+  height: 6px;
+  margin-top: 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.ach-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--ember-deep), var(--ember));
+}
+
+.ach-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--bone-dim);
+  white-space: nowrap;
+}
+
+/* Ayarlar */
+.danger-row {
+  border-color: rgba(228, 87, 75, 0.35);
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 11px;
+  color: var(--ember);
+  text-decoration: underline;
 }
 
 /* Yanlarda duran yoldaşlar */
@@ -559,14 +722,15 @@ button:disabled {
 .tab {
   position: relative;
   flex: 1;
-  padding: 12px 6px;
+  padding: 11px 2px;
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
   font-family: var(--font-display);
-  font-size: 18px;
-  letter-spacing: 1px;
+  font-size: 15.5px;
+  letter-spacing: 0.5px;
   color: var(--bone-dim);
+  white-space: nowrap;
 }
 
 .tab.active {

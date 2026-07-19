@@ -12,38 +12,56 @@ function computeOffline(data, updatedAt) {
   );
   if (elapsed < 60) return null; // 1 dakikadan kısa aralar için gösterme
   const artifacts = data.artifacts ?? {};
-  const dps = totalDps(data.npcLevels ?? {}, data.prestigeLevels ?? {}, artifacts);
+  const achCount = Object.keys(data.achievements ?? {}).length;
+  const dps = totalDps(data.npcLevels ?? {}, data.prestigeLevels ?? {}, artifacts, achCount);
   if (dps <= 0) return null;
   const stage = Math.max(1, data.stage ?? 1);
   const kills = (elapsed * dps) / creatureHp(stage);
   const gold =
     kills *
     creatureGold(stage) *
-    goldMultiplier(data.prestigeLevels ?? {}, data.heroUpgrades ?? {}, artifacts) *
+    goldMultiplier(data.prestigeLevels ?? {}, data.heroUpgrades ?? {}, artifacts, achCount) *
     (1 + artifactBonuses(artifacts).offline);
   if (gold < 1) return null;
   return { gold, seconds: elapsed };
 }
 
+// Yükleme başarısız olursa kaydetme tamamen kapatılır: aksi halde taze state,
+// sunucudaki gerçek kaydın üzerine yazılabilir (autosave/beacon ile).
+let saveDisabled = false;
+
 export async function loadGame() {
   const store = useGameStore.getState();
-  try {
-    const res = await fetch('/api/save');
-    if (!res.ok) throw new Error(`GET /api/save ${res.status}`);
-    const body = await res.json();
-    if (!body || !body.data) {
-      store.startFresh();
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const res = await fetch('/api/save');
+      if (!res.ok) throw new Error(`GET /api/save ${res.status}`);
+      const body = await res.json();
+      if (!body || !body.data) {
+        store.startFresh();
+        return;
+      }
+      const offline = computeOffline(body.data, body.updatedAt);
+      store.loadSaveData(body.data, offline);
       return;
+    } catch (err) {
+      if (attempt === 3) {
+        saveDisabled = true;
+        console.error(
+          '[save] Kayıt 3 denemede yüklenemedi; sunucudaki kayıt korunsun diye ' +
+            'kaydetme KAPATILDI. Sunucu çalışınca sayfayı yenile.',
+          err
+        );
+        store.startFresh();
+        return;
+      }
+      await new Promise((r) => setTimeout(r, 800));
     }
-    const offline = computeOffline(body.data, body.updatedAt);
-    store.loadSaveData(body.data, offline);
-  } catch (err) {
-    console.error('[save] Kayıt yüklenemedi, yeni oyun başlatılıyor:', err);
-    store.startFresh();
   }
 }
 
 export async function saveGame() {
+  if (saveDisabled) return;
   const data = useGameStore.getState().getSaveData();
   try {
     await fetch('/api/save', {
@@ -62,7 +80,7 @@ export function setupAutosave() {
   if (autosaveId) return;
   autosaveId = setInterval(saveGame, AUTOSAVE_MS);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') {
+    if (document.visibilityState === 'hidden' && !saveDisabled) {
       const data = useGameStore.getState().getSaveData();
       navigator.sendBeacon(
         '/api/save',

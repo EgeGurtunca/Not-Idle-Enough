@@ -8,6 +8,8 @@ import HeroPanel from './components/HeroPanel.jsx';
 import NpcPanel from './components/NpcPanel.jsx';
 import ArtifactPanel from './components/ArtifactPanel.jsx';
 import PrestigePanel from './components/PrestigePanel.jsx';
+import AchievementsPanel from './components/AchievementsPanel.jsx';
+import SettingsPanel from './components/SettingsPanel.jsx';
 import OfflineModal from './components/OfflineModal.jsx';
 
 let booted = false;
@@ -24,11 +26,14 @@ const TABS = [
   { id: 'npc', label: 'Yoldaşlar' },
   { id: 'artifact', label: 'Sandık' },
   { id: 'prestige', label: 'Prestij' },
+  { id: 'achievements', label: 'Başarım' },
+  { id: 'settings', label: 'Ayarlar' },
 ];
 
 export default function App() {
   const loaded = useGameStore((s) => s.loaded);
   const canPrestige = useGameStore(selectors.canPrestige);
+  const toast = useGameStore((s) => s.toast);
   const [tab, setTab] = useState('hero');
 
   useEffect(() => {
@@ -62,9 +67,16 @@ export default function App() {
             {tab === 'npc' && <NpcPanel />}
             {tab === 'artifact' && <ArtifactPanel />}
             {tab === 'prestige' && <PrestigePanel />}
+            {tab === 'achievements' && <AchievementsPanel />}
+            {tab === 'settings' && <SettingsPanel />}
           </div>
         </aside>
       </main>
+      {toast && (
+        <div className="toast" key={toast.id}>
+          {toast.text}
+        </div>
+      )}
       <OfflineModal />
     </div>
   );

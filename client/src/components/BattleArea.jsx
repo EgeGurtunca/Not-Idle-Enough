@@ -1,9 +1,46 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGameStore, selectors } from '../store/gameStore.js';
-import { zoneName, NPCS } from '../game/constants.js';
+import { zoneName, NPCS, SKILLS } from '../game/constants.js';
 import { isBossStage, bossTime, killsRequired } from '../game/formulas.js';
 import { fmt } from '../utils/format.js';
+import { sfx } from '../game/audio.js';
 import CreatureCanvas from './CreatureCanvas.jsx';
+
+function SkillBar() {
+  const skillState = useGameStore((s) => s.skillState);
+  const highest = useGameStore((s) => s.highestStage);
+  const useSkill = useGameStore((s) => s.useSkill);
+
+  return (
+    <div className="skill-bar">
+      {SKILLS.map((sk) => {
+        const st = skillState[sk.id] ?? { active: 0, cd: 0 };
+        const locked = highest < sk.unlockStage;
+        const onCooldown = st.cd > 0 && st.active <= 0;
+        const cdFrac = st.cd > 0 ? st.cd / sk.cooldown : 0;
+        return (
+          <button
+            key={sk.id}
+            type="button"
+            className={`skill ${st.active > 0 ? 'active' : ''} ${locked ? 'locked' : ''}`}
+            style={{ '--cd': cdFrac }}
+            disabled={locked || st.cd > 0}
+            title={
+              locked
+                ? `${sk.name} — Bölge ${sk.unlockStage}'de açılır`
+                : `${sk.name} — ${sk.desc} (${sk.duration}sn, bekleme ${sk.cooldown}sn)`
+            }
+            onClick={() => useSkill(sk.id)}
+          >
+            <span className="skill-emoji">{locked ? '🔒' : sk.emoji}</span>
+            {st.active > 0 && <span className="skill-time">{Math.ceil(st.active)}</span>}
+            {onCooldown && <span className="skill-time cd">{Math.ceil(st.cd)}</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function BattleArea() {
   const stage = useGameStore((s) => s.stage);
@@ -78,6 +115,8 @@ export default function BattleArea() {
   function onHit(e) {
     const hit = clickAttack();
     if (!hit) return;
+    if (hit.crit) sfx.crit();
+    else sfx.hit();
     setHitId((h) => h + 1);
     const rect = arenaRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -119,8 +158,13 @@ export default function BattleArea() {
 
       <div className="enemy-name-row">
         <span className={`enemy-name ${enemy.kind === 'boss' ? (enemy.big ? 'big-boss' : 'mini-boss') : ''}`}>
-          {enemy.kind === 'boss' ? enemy.name : 'Yaratık'}
+          {enemy.name}
         </span>
+        {enemy.kind === 'boss' && (
+          <span className={`enemy-badge ${enemy.big ? 'big' : 'mini'}`}>
+            {enemy.big ? 'BÜYÜK BOSS' : 'MİNİ BOSS'}
+          </span>
+        )}
       </div>
 
       <button
@@ -131,7 +175,7 @@ export default function BattleArea() {
         onPointerDown={onHit}
         aria-label="Saldır"
       >
-        <CreatureCanvas enemy={enemy} stage={stage} hitId={hitId} />
+        <CreatureCanvas enemy={enemy} hitId={hitId} />
       </button>
 
       <div className="hpbar">
@@ -166,6 +210,8 @@ export default function BattleArea() {
         <span title="Klik hasarı">👆 {fmt(clickDmg)}</span>
         <span title="Yoldaş hasarı (saniyede)">🗡️ {fmt(dps)}/sn</span>
       </div>
+
+      <SkillBar />
 
       <div className="npc-side left">
         {leftSide.map((n, i) => (
