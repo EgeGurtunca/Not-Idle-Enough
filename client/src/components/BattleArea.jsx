@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGameStore, selectors } from '../store/gameStore.js';
-import { zoneName, NPCS, SKILLS } from '../game/constants.js';
+import { zoneName, zoneTheme, NPCS, SKILLS } from '../game/constants.js';
 import { isBossStage, bossTime, killsRequired } from '../game/formulas.js';
 import { fmt } from '../utils/format.js';
 import { sfx } from '../game/audio.js';
@@ -42,6 +42,23 @@ function SkillBar() {
   );
 }
 
+function GoldenCreature() {
+  const golden = useGameStore((s) => s.golden);
+  const clickGolden = useGameStore((s) => s.clickGolden);
+  if (!golden) return null;
+  return (
+    <button
+      type="button"
+      className="golden"
+      style={{ left: `${golden.x}%`, top: `${golden.y}%`, '--ttl': golden.ttl / 12 }}
+      onClick={clickGolden}
+      title={golden.reward === 'gold' ? 'Altın patlaması!' : 'Altın Coşkusu buff!'}
+    >
+      {golden.reward === 'gold' ? '🪙' : '✨'}
+    </button>
+  );
+}
+
 export default function BattleArea() {
   const stage = useGameStore((s) => s.stage);
   const kills = useGameStore((s) => s.kills);
@@ -54,6 +71,7 @@ export default function BattleArea() {
   const challengeBoss = useGameStore((s) => s.challengeBoss);
   const clickDmg = useGameStore(selectors.clickDamage);
   const dps = useGameStore(selectors.totalDps);
+  const combo = useGameStore((s) => s.combo);
 
   const arenaRef = useRef(null);
   const sigilRef = useRef(null);
@@ -63,6 +81,30 @@ export default function BattleArea() {
   const [floaters, setFloaters] = useState([]);
   const [projectiles, setProjectiles] = useState([]);
   const [hitId, setHitId] = useState(0);
+  const [bossIntro, setBossIntro] = useState(null);
+  const prevEnemyId = useRef(null);
+
+  // Düşman değişimi = bir kill oldu: coin patlaması + (boss ise) giriş kartı
+  useEffect(() => {
+    if (!enemy) return;
+    const prev = prevEnemyId.current;
+    prevEnemyId.current = enemy.id;
+    if (prev == null) return; // ilk mount
+    const rect = arenaRef.current?.getBoundingClientRect();
+    const cx = rect ? rect.width / 2 : 200;
+    const cy = rect ? rect.height * 0.5 : 200;
+    const coins = Array.from({ length: 5 }, () => {
+      const id = ++floaterId.current;
+      setTimeout(() => setFloaters((f) => f.filter((o) => o.id !== id)), 850);
+      return { id, x: cx + (Math.random() * 90 - 45), y: cy + (Math.random() * 50 - 25), text: '🪙', coin: true };
+    });
+    setFloaters((f) => [...f.slice(-20), ...coins]);
+    if (enemy.kind === 'boss') {
+      setBossIntro({ id: enemy.id, name: enemy.name, big: enemy.big });
+      setTimeout(() => setBossIntro((b) => (b && b.id === enemy.id ? null : b)), 1600);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enemy?.id]);
 
   const inBoss = mode === 'boss';
   const required = killsRequired(prestigeLevels);
@@ -142,7 +184,7 @@ export default function BattleArea() {
   const hpPct = Math.max(0, (enemy.hp / enemy.maxHp) * 100);
 
   return (
-    <section className="arena" ref={arenaRef}>
+    <section className="arena" ref={arenaRef} style={{ '--zone': zoneTheme(stage) }}>
       <div className="stage-head">
         <span className="stage-zone">{zoneName(stage)}</span>
         <span className="stage-no">
@@ -165,6 +207,15 @@ export default function BattleArea() {
             {enemy.big ? 'BÜYÜK BOSS' : 'MİNİ BOSS'}
           </span>
         )}
+        {enemy.modifier && (
+          <span
+            className="enemy-badge modifier"
+            style={{ borderColor: enemy.modifier.color, color: enemy.modifier.color }}
+            title={enemy.modifier.desc}
+          >
+            {enemy.modifier.emoji} {enemy.modifier.name}
+          </span>
+        )}
       </div>
 
       <button
@@ -175,7 +226,7 @@ export default function BattleArea() {
         onPointerDown={onHit}
         aria-label="Saldır"
       >
-        <CreatureCanvas enemy={enemy} hitId={hitId} />
+        <CreatureCanvas enemy={enemy} hitId={hitId} stage={stage} />
       </button>
 
       <div className="hpbar">
@@ -209,6 +260,11 @@ export default function BattleArea() {
       <div className="battle-stats">
         <span title="Klik hasarı">👆 {fmt(clickDmg)}</span>
         <span title="Yoldaş hasarı (saniyede)">🗡️ {fmt(dps)}/sn</span>
+        {combo > 1 && (
+          <span className="combo" title="Hızlı klik çarpanı">
+            🔥 {combo}x kombo (×{(1 + Math.min(combo, 50) * 0.02).toFixed(2)})
+          </span>
+        )}
       </div>
 
       <SkillBar />
@@ -250,10 +306,19 @@ export default function BattleArea() {
         </span>
       ))}
 
+      <GoldenCreature />
+
+      {bossIntro && (
+        <div className={`boss-intro ${bossIntro.big ? 'big' : ''}`} key={bossIntro.id}>
+          <span className="boss-intro-label">{bossIntro.big ? '👑 BÜYÜK BOSS' : '⚔ BOSS'}</span>
+          <span className="boss-intro-name">{bossIntro.name}</span>
+        </div>
+      )}
+
       {floaters.map((f) => (
         <span
           key={f.id}
-          className={`floater ${f.crit ? 'crit' : ''}`}
+          className={`floater ${f.crit ? 'crit' : ''} ${f.coin ? 'coin' : ''}`}
           style={{ left: f.x, top: f.y }}
         >
           {f.text}

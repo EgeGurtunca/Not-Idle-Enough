@@ -1,5 +1,5 @@
 import { useGameStore } from '../store/gameStore.js';
-import { NPCS, MILESTONE_EVERY } from '../game/constants.js';
+import { NPCS, MILESTONE_EVERY, NPC_PASSIVES, NPC_PASSIVE_THRESHOLD } from '../game/constants.js';
 import { npcDps, npcLevelCost, bulkCost, maxAffordable } from '../game/formulas.js';
 import { fmt } from '../utils/format.js';
 import AmountToggle from './AmountToggle.jsx';
@@ -36,6 +36,12 @@ function NpcRow({ npc, amount }) {
               Seviye {level} · 🗡️ {fmt(npcDps(npc, level, prestigeLevels))}/sn
             </div>
             <div className="row-milestone">Seviye {nextMilestone}'te hasar ×2</div>
+            {NPC_PASSIVES[npc.id] && (
+              <div className={`row-passive ${level >= NPC_PASSIVE_THRESHOLD ? 'on' : ''}`}>
+                {level >= NPC_PASSIVE_THRESHOLD ? '✦' : '🔒'} Pasif (sv {NPC_PASSIVE_THRESHOLD}):{' '}
+                {NPC_PASSIVES[npc.id].label}
+              </div>
+            )}
           </>
         ) : (
           <div className="row-sub">İşe alınca otomatik vurur · 🗡️ {fmt(npc.baseDps)}/sn</div>

@@ -3,6 +3,7 @@ export const TICK_MS = 100;
 export const KILLS_PER_STAGE = 10; // boss gelmeden önce kesilecek yaratık sayısı
 export const BOSS_TIME_BASE = 30; // saniye
 export const PRESTIGE_STAGE = 100; // prestijin açıldığı stage
+export const TRANSCEND_STAGE = 500; // aşkınlığın açıldığı stage (= son bölge)
 export const MAX_STAGE = 500; // son bölge
 export const OFFLINE_CAP_HOURS = 10;
 export const AUTOSAVE_MS = 20000;
@@ -11,6 +12,22 @@ export const AUTOSAVE_MS = 20000;
 export const CREATURE_BASE_HP = 10;
 export const HP_GROWTH = 1.5; // her stage HP çarpanı
 export const GOLD_DIVISOR = 6; // altın = HP / 6
+// ---- Boss modifiye'leri ----
+// Boss savaşlarına taktik katar. hpMult/goldMult/timeMult başta uygulanır;
+// dpsMult = NPC hasarının geçen oranı (zırhlı düşük), drainMult = süre akış hızı.
+export const BOSS_MODIFIERS = [
+  { id: 'zirhli',   name: 'Zırhlı',   emoji: '🛡️', color: '#8ea0ff', desc: 'NPC hasarına dirençli — tıklaman önemli!', hpMult: 1,   goldMult: 1.3, timeMult: 1,    drainMult: 1,   dpsMult: 0.35 },
+  { id: 'aceleci',  name: 'Aceleci',  emoji: '💨', color: '#7fbf8e', desc: 'Kısa süre ama az can',                     hpMult: 0.5, goldMult: 1,   timeMult: 0.55, drainMult: 1,   dpsMult: 1 },
+  { id: 'hazineci', name: 'Hazineci', emoji: '💰', color: '#ffd86b', desc: 'Çok canlı ama beş kat ödül',               hpMult: 2.2, goldMult: 5,   timeMult: 1.15, drainMult: 1,   dpsMult: 1 },
+  { id: 'ofkeli',   name: 'Öfkeli',   emoji: '🔥', color: '#e4574b', desc: 'Süre daha hızlı akar',                     hpMult: 1,   goldMult: 1.6, timeMult: 1,    drainMult: 1.5, dpsMult: 1 },
+];
+// Modifiye çıkma şansı: mini boss %35, büyük boss %60
+export function rollBossModifier(big) {
+  const chance = big ? 0.6 : 0.35;
+  if (Math.random() > chance) return null;
+  return BOSS_MODIFIERS[Math.floor(Math.random() * BOSS_MODIFIERS.length)];
+}
+
 export const MINIBOSS_HP_MULT = 10;
 export const MINIBOSS_GOLD_MULT = 13;
 export const BOSS_HP_MULT = 24;
@@ -86,6 +103,22 @@ export const ACHIEVEMENTS = [
   { id: 'gold3',    name: 'Altın Tanrısı',      emoji: '👑', desc: 'Toplam 1e30 altın kazan',    stat: 'totalGoldEarned', threshold: 1e30 },
 ];
 
+// ---- Kilometre taşı ödülleri ----
+// highestStage'e ilk ulaşınca tek seferlik kristal. Erken kristaller ilk prestije
+// kadar birikir (head start). id = eşik stage.
+export const MILESTONES = [
+  { stage: 25, crystals: 5 },
+  { stage: 50, crystals: 15 },
+  { stage: 75, crystals: 40 },
+  { stage: 100, crystals: 120 },
+  { stage: 150, crystals: 400 },
+  { stage: 200, crystals: 1200 },
+  { stage: 250, crystals: 3500 },
+  { stage: 300, crystals: 9000 },
+  { stage: 400, crystals: 30000 },
+  { stage: 500, crystals: 100000 },
+];
+
 // ---- NPC'ler (Yoldaşlar) ----
 // projectile: savaş alanında fırlattıkları mermi (her NPC'ninki farklı)
 export const NPCS = [
@@ -102,6 +135,34 @@ export const NPCS = [
   { id: 'ent',       name: 'Kadim Ent',       emoji: '🌳', projectile: '🍃', unlockCost: 5e15,    baseDps: 1.4e14 },
   { id: 'zaman',     name: 'Zaman Bekçisi',   emoji: '⏳', projectile: '🌀', unlockCost: 1.2e17,  baseDps: 3.2e15 },
 ];
+
+// ---- NPC pasifleri ----
+// Yoldaş NPC_PASSIVE_THRESHOLD seviyeye ulaşınca küresel bir pasif açar.
+// type: dmg (tüm hasar ×) | gold (altın ×) | critChance (+) | critMult (+)
+export const NPC_PASSIVE_THRESHOLD = 50;
+export const NPC_PASSIVES = {
+  okcu:      { type: 'critChance', value: 0.08, label: '+%8 kritik şansı' },
+  sovalye:   { type: 'dmg',        value: 0.15, label: '+%15 tüm hasar' },
+  buyucu:    { type: 'gold',       value: 0.20, label: '+%20 altın' },
+  haydut:    { type: 'critMult',   value: 0.5,  label: '+%50 kritik hasarı' },
+  rahip:     { type: 'dmg',        value: 0.20, label: '+%20 tüm hasar' },
+  ejderavci: { type: 'gold',       value: 0.30, label: '+%30 altın' },
+  suikastci: { type: 'critChance', value: 0.10, label: '+%10 kritik şansı' },
+  firtina:   { type: 'dmg',        value: 0.30, label: '+%30 tüm hasar' },
+  ates:      { type: 'critMult',   value: 0.75, label: '+%75 kritik hasarı' },
+  buz:       { type: 'gold',       value: 0.40, label: '+%40 altın' },
+  ent:       { type: 'dmg',        value: 0.40, label: '+%40 tüm hasar' },
+  zaman:     { type: 'gold',       value: 0.50, label: '+%50 altın' },
+};
+
+// Sv eşiğini geçen NPC'lerin pasiflerini topla
+export function npcPassiveBonus(npcLevels = {}) {
+  const b = { dmg: 0, gold: 0, critChance: 0, critMult: 0 };
+  for (const [id, p] of Object.entries(NPC_PASSIVES)) {
+    if ((npcLevels[id] ?? 0) >= NPC_PASSIVE_THRESHOLD) b[p.type] += p.value;
+  }
+  return { dmgMult: 1 + b.dmg, goldMult: 1 + b.gold, critChance: b.critChance, critMult: b.critMult };
+}
 
 // ---- Prestij (kristal) upgrade'leri ----
 export const PRESTIGE_UPGRADES = [
@@ -134,6 +195,52 @@ export const PRESTIGE_UPGRADES = [
     id: 'hazirBaslangic', name: 'Hazır Başlangıç', emoji: '🎒',
     desc: 'Her yeni maceraya altınla başla (1000 × 10^(sv−1))',
     baseCost: 10, costGrowth: 2, maxLevel: 10,
+  },
+];
+
+// ---- Aşkınlık (Yıldız Tozu 💫) ----
+// Bölge 500'e ilk ulaşınca açılır. Koşu + kristal + prestij sıfırlanır; artifact ve
+// başarımlar korunur. Yıldız Tozu bankadaki kristale göre kazanılır; kalıcı çarpanlar verir.
+export const STARDUST_UPGRADES = [
+  {
+    id: 'yildizGucu', name: 'Yıldız Gücü', emoji: '🌟',
+    desc: 'Tüm hasar (klik + NPC) +%40 (seviye başına)',
+    baseCost: 3, costGrowth: 1.8, maxLevel: Infinity,
+  },
+  {
+    id: 'yildizServeti', name: 'Yıldız Serveti', emoji: '💫',
+    desc: 'Altın kazancı +%50 (seviye başına)',
+    baseCost: 3, costGrowth: 1.8, maxLevel: Infinity,
+  },
+  {
+    id: 'yildizBilgeligi', name: 'Yıldız Bilgeliği', emoji: '✨',
+    desc: 'Kristal kazancı +%30 (seviye başına)',
+    baseCost: 5, costGrowth: 2, maxLevel: Infinity,
+  },
+  {
+    id: 'yildizKalkani', name: 'Yıldız Kalkanı', emoji: '🛡️',
+    desc: 'Boss süresi +3 saniye (seviye başına)',
+    baseCost: 8, costGrowth: 2.5, maxLevel: 8,
+  },
+  {
+    id: 'yildizBaslangici', name: 'Yıldız Başlangıcı', emoji: '🚀',
+    desc: 'Her aşkınlıktan sonra başlangıç kristaliyle başla (50 × 3^(sv−1))',
+    baseCost: 5, costGrowth: 2.2, maxLevel: 10,
+  },
+  {
+    id: 'otoSeviye', name: 'Oto-Seviye', emoji: '🤖',
+    desc: 'Altını en ucuz geliştirmeye otomatik harcar',
+    baseCost: 15, costGrowth: 1, maxLevel: 1,
+  },
+  {
+    id: 'otoMeydan', name: 'Oto-Meydan Oku', emoji: '⚔️',
+    desc: 'Kaçırılan boss\'a otomatik yeniden meydan okur',
+    baseCost: 25, costGrowth: 1, maxLevel: 1,
+  },
+  {
+    id: 'otoPrestij', name: 'Oto-Prestij', emoji: '♻️',
+    desc: 'Takılınca (30sn ilerleme yoksa) otomatik prestij yapar',
+    baseCost: 60, costGrowth: 1, maxLevel: 1,
   },
 ];
 
@@ -206,44 +313,44 @@ export const ARTIFACTS = [
 // look: CreatureCanvas'ın 3B modeli kurarken kullandığı özellik bayrakları.
 export const CREATURE_TIERS = [
   [
-    { id: 'fare',       name: 'Lağım Faresi',      emoji: '🐀', look: { color: '#8a8078', ears: 'round', snout: 'point', tail: 'thin' } },
-    { id: 'yarasa',     name: 'Vampir Yarasa',     emoji: '🦇', look: { color: '#5c5470', shape: 'small', ears: 'point', wings: true, fangs: true } },
-    { id: 'yilan',      name: 'Zehirli Yılan',     emoji: '🐍', look: { color: '#5f9e58', shape: 'serpent', eyes: { color: '#ffd84d' } } },
+    { id: 'fare',       name: 'Lağım Faresi',      emoji: '🐀', look: { arch: 'quadruped', color: '#8a8078', ears: 'round', snout: 'point', tail: 'thin' } },
+    { id: 'yarasa',     name: 'Vampir Yarasa',     emoji: '🦇', look: { arch: 'flyer', color: '#5c5470', shape: 'small', wings: true, fangs: true } },
+    { id: 'yilan',      name: 'Zehirli Yılan',     emoji: '🐍', look: { arch: 'serpent', color: '#5f9e58', fangs: true, eyes: { color: '#ffd84d' } } },
   ],
   [
-    { id: 'kurt',       name: 'Aç Kurt',           emoji: '🐺', look: { color: '#7d8494', ears: 'point', snout: 'point', tail: 'thin', fangs: true } },
-    { id: 'domuz',      name: 'Yaban Domuzu',      emoji: '🐗', look: { color: '#8f6b4f', shape: 'big', snout: 'tusk' } },
-    { id: 'orumcek',    name: 'Dev Örümcek',       emoji: '🕷️', look: { color: '#3f3a4a', shape: 'small', legs8: true, eyes: { count: 4, color: '#e4574b' } } },
+    { id: 'kurt',       name: 'Aç Kurt',           emoji: '🐺', look: { arch: 'quadruped', color: '#7d8494', ears: 'point', snout: 'point', tail: 'thin', fangs: true } },
+    { id: 'domuz',      name: 'Yaban Domuzu',      emoji: '🐗', look: { arch: 'quadruped', color: '#8f6b4f', stocky: true, snout: 'tusk' } },
+    { id: 'orumcek',    name: 'Dev Örümcek',       emoji: '🕷️', look: { arch: 'bug', color: '#3f3a4a', shape: 'small', eyes: { count: 4, color: '#e4574b' } } },
   ],
   [
-    { id: 'goblin',     name: 'Goblin',            emoji: '👺', look: { color: '#69a15c', ears: 'point', fangs: true } },
-    { id: 'trol',       name: 'Mağara Trolü',      emoji: '🧌', look: { color: '#7a8f6a', shape: 'big', horns: 1, fangs: true } },
-    { id: 'tilki',      name: 'Hilebaz Tilki',     emoji: '🦊', look: { color: '#c97f3c', ears: 'point', snout: 'point', tail: 'thin' } },
+    { id: 'goblin',     name: 'Goblin',            emoji: '👺', look: { arch: 'humanoid', color: '#69a15c', ears: 'point', fangs: true } },
+    { id: 'trol',       name: 'Mağara Trolü',      emoji: '🧌', look: { arch: 'humanoid', color: '#7a8f6a', shape: 'big', horns: 1, fangs: true } },
+    { id: 'tilki',      name: 'Hilebaz Tilki',     emoji: '🦊', look: { arch: 'quadruped', color: '#c97f3c', ears: 'point', snout: 'point', tail: 'thin' } },
   ],
   [
-    { id: 'iskelet',    name: 'İskelet Savaşçı',   emoji: '💀', look: { color: '#d8d2c0', eyes: { socket: true } } },
-    { id: 'zombi',      name: 'Zombi',             emoji: '🧟', look: { color: '#8aa07a', fangs: true, glowEyes: '#b6ff8a' } },
-    { id: 'hortlak',    name: 'Hortlak',           emoji: '👻', look: { color: '#cfd4e8', shape: 'tall', translucent: true } },
+    { id: 'iskelet',    name: 'İskelet Savaşçı',   emoji: '💀', look: { arch: 'humanoid', color: '#d8d2c0', eyes: { socket: true } } },
+    { id: 'zombi',      name: 'Zombi',             emoji: '🧟', look: { arch: 'humanoid', color: '#8aa07a', fangs: true, glowEyes: '#b6ff8a' } },
+    { id: 'hortlak',    name: 'Hortlak',           emoji: '👻', look: { arch: 'ghost', color: '#cfd4e8', translucent: true } },
   ],
   [
-    { id: 'akrep',      name: 'Dev Akrep',         emoji: '🦂', look: { color: '#8f4a3c', shape: 'long', claws: true, stinger: true } },
-    { id: 'kertenkele', name: 'Kertenkele Savaşçı',emoji: '🦎', look: { color: '#6faf5c', shape: 'long', tail: 'thin' } },
-    { id: 'timsah',     name: 'Bataklık Timsahı',  emoji: '🐊', look: { color: '#4f7f4a', shape: 'long', snout: 'long' } },
+    { id: 'akrep',      name: 'Dev Akrep',         emoji: '🦂', look: { arch: 'bug', color: '#8f4a3c', claws: true, stinger: true } },
+    { id: 'kertenkele', name: 'Kertenkele Savaşçı',emoji: '🦎', look: { arch: 'quadruped', color: '#6faf5c', longBody: true, snout: 'point', tail: 'thin' } },
+    { id: 'timsah',     name: 'Bataklık Timsahı',  emoji: '🐊', look: { arch: 'quadruped', color: '#4f7f4a', longBody: true, snout: 'long', fangs: true } },
   ],
   [
-    { id: 'vampir',     name: 'Vampir Kont',       emoji: '🧛', look: { color: '#cbb9d6', fangs: true, glowEyes: '#e4574b' } },
-    { id: 'kurtadam',   name: 'Kurtadam',          emoji: '🐺', look: { color: '#5a5f6e', shape: 'big', ears: 'point', snout: 'point', fangs: true, claws: true, glowEyes: '#f0a83c' } },
-    { id: 'cadi',       name: 'Kara Cadı',         emoji: '🧙‍♀️', look: { color: '#9d7be8', hat: true } },
+    { id: 'vampir',     name: 'Vampir Kont',       emoji: '🧛', look: { arch: 'humanoid', color: '#cbb9d6', fangs: true, glowEyes: '#e4574b' } },
+    { id: 'kurtadam',   name: 'Kurtadam',          emoji: '🐺', look: { arch: 'humanoid', color: '#5a5f6e', shape: 'big', ears: 'point', snout: 'point', fangs: true, claws: true, glowEyes: '#f0a83c' } },
+    { id: 'cadi',       name: 'Kara Cadı',         emoji: '🧙‍♀️', look: { arch: 'humanoid', color: '#9d7be8', hat: true } },
   ],
   [
-    { id: 'dev',        name: 'Dağ Devi',          emoji: '👹', look: { color: '#b06a4a', shape: 'big', horns: 1, fangs: true } },
-    { id: 'golem',      name: 'Taş Golem',         emoji: '🗿', look: { color: '#8d8a84', shape: 'boxy', glowEyes: '#f0a83c' } },
-    { id: 'sahin',      name: 'Kızıl Şahin',       emoji: '🦅', look: { color: '#a3763f', wings: true, snout: 'point' } },
+    { id: 'dev',        name: 'Dağ Devi',          emoji: '👹', look: { arch: 'humanoid', color: '#b06a4a', shape: 'big', horns: 1, fangs: true } },
+    { id: 'golem',      name: 'Taş Golem',         emoji: '🗿', look: { arch: 'humanoid', color: '#8d8a84', shape: 'big', glowEyes: '#f0a83c' } },
+    { id: 'sahin',      name: 'Kızıl Şahin',       emoji: '🦅', look: { arch: 'flyer', color: '#a3763f', wings: true, snout: 'point' } },
   ],
   [
-    { id: 'wyvern',     name: 'Genç Wyvern',       emoji: '🐉', look: { color: '#c05548', horns: 2, wings: true, tail: 'spike' } },
-    { id: 'kadimejder', name: 'Kadim Ejder',       emoji: '🐲', look: { color: '#8f3f3f', shape: 'big', horns: 2, wings: true, tail: 'spike' } },
-    { id: 'rex',        name: 'Kemikli Rex',       emoji: '🦖', look: { color: '#6f9e4f', shape: 'big', snout: 'long', fangs: true, tail: 'spike' } },
+    { id: 'wyvern',     name: 'Genç Wyvern',       emoji: '🐉', look: { arch: 'flyer', color: '#c05548', horns: 2, wings: true, tail: 'spike' } },
+    { id: 'kadimejder', name: 'Kadim Ejder',       emoji: '🐲', look: { arch: 'flyer', color: '#8f3f3f', shape: 'big', horns: 2, wings: true, tail: 'spike' } },
+    { id: 'rex',        name: 'Kemikli Rex',       emoji: '🦖', look: { arch: 'quadruped', color: '#6f9e4f', longBody: true, shape: 'big', snout: 'long', fangs: true, tail: 'spike' } },
   ],
 ];
 
@@ -279,8 +386,24 @@ function tierIndex(stage) {
   return Math.floor((stage - 1) / 10) % CREATURE_TIERS.length;
 }
 
+// Bölge dilimine göre atmosfer rengi (arena parıltısı + 3B rim ışığı)
+export const ZONE_THEMES = [
+  '#6fae5c', // Çürük Lağımlar
+  '#6a8fbf', // Uluyan Orman
+  '#7aa845', // Goblin Geçidi
+  '#9a8fb0', // Kemik Çukuru
+  '#8fbf3a', // Zehirli Bataklık
+  '#b0506a', // Lanetli Saray
+  '#c0964a', // Taş Devler Yaylası
+  '#e4574b', // Ejder İni
+];
+
 export function zoneName(stage) {
   return ZONE_NAMES[tierIndex(stage)];
+}
+
+export function zoneTheme(stage) {
+  return ZONE_THEMES[tierIndex(stage)];
 }
 
 export function creatureType(stage, seed) {

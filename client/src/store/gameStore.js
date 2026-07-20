@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import {
-  PRESTIGE_STAGE, MAX_STAGE, NPCS, PRESTIGE_UPGRADES, HERO_UPGRADES,
-  ARTIFACTS, ARTIFACT_MAX_LEVEL, SKILLS, ACHIEVEMENTS,
-  creatureType, bossName,
+  PRESTIGE_STAGE, TRANSCEND_STAGE, MAX_STAGE, NPCS, PRESTIGE_UPGRADES, HERO_UPGRADES,
+  STARDUST_UPGRADES, ARTIFACTS, ARTIFACT_MAX_LEVEL, SKILLS, ACHIEVEMENTS, MILESTONES,
+  creatureType, bossName, rollBossModifier, npcPassiveBonus,
 } from '../game/constants.js';
 import {
   isBossStage, creatureHp, creatureGold, bossHp, bossGold,
@@ -10,12 +10,22 @@ import {
   npcLevelCost, totalDps, bulkCost, maxAffordable, goldMultiplier, bossTime,
   crystalGain, prestigeUpgradeCost, startingGold, pullCost, killsRequired,
   rarityOdds, artifactUpgradeCost,
+  transcendGain, stardustUpgradeCost, startingCrystals,
 } from '../game/formulas.js';
 import { sfx, setMuted } from '../game/audio.js';
+import { fmt } from '../utils/format.js';
 
 let enemySeq = 0; // doğuş animasyonu için her düşmana benzersiz kimlik
 let achTimer = 0; // başarım kontrolü zamanlayıcısı (2 sn'de bir)
 let toastSeq = 0;
+let goldenTimer = 45 + Math.random() * 60; // ilk altın yaratık için geri sayım (sn)
+const GOLDEN_TTL = 12; // ekranda kalma süresi (sn)
+let autoTimer = 0; // Oto-Seviye throttle
+let stuckTimer = 0; // Oto-Prestij: ilerleme yoksa geçen süre
+let lastStageSeen = 1;
+let lastClickAt = 0; // kombo penceresi için son klik zamanı
+const COMBO_WINDOW = 1200; // ms
+const COMBO_MAX = 50;
 
 const DEFAULT_STATS = {
   totalKills: 0,
@@ -44,6 +54,8 @@ function makeBoss(stage) {
   const big = isBossStage(stage);
   const seed = Math.floor(Math.random() * 1000);
   const type = creatureType(stage, seed);
+  const mod = rollBossModifier(big);
+  const hp = bossHp(stage) * (mod?.hpMult ?? 1);
   return {
     id: ++enemySeq,
     kind: 'boss',
@@ -51,8 +63,13 @@ function makeBoss(stage) {
     typeId: type.id,
     name: big ? bossName(stage) : `Elit ${type.name}`,
     emoji: type.emoji,
-    hp: bossHp(stage),
-    maxHp: bossHp(stage),
+    modifier: mod ? { id: mod.id, name: mod.name, emoji: mod.emoji, color: mod.color, desc: mod.desc } : null,
+    goldMult: mod?.goldMult ?? 1,
+    timeMult: mod?.timeMult ?? 1,
+    drainMult: mod?.drainMult ?? 1,
+    dpsMult: mod?.dpsMult ?? 1,
+    hp,
+    maxHp: hp,
   };
 }
 
@@ -95,10 +112,14 @@ export const useGameStore = create((set, get) => ({
   highestStage: 1,
   prestigeLevels: {},
   artifacts: {}, // id -> seviye; prestijde KORUNUR
+  stardust: 0, // Yıldız Tozu (aşkınlıkta bile korunur)
+  stardustLevels: {}, // kalıcı aşkınlık upgrade'leri
   totalPulls: 0,
   totalPrestiges: 0,
+  totalTranscends: 0,
   stats: { ...DEFAULT_STATS },
   achievements: {}, // id -> true
+  milestones: {}, // stage -> true (kilometre taşı ödülleri alındı mı)
   skillState: {}, // id -> { active, cd } (saniye)
   muted: false,
   buyAmount: 1, // 1 | 10 | 'max' — tüm panellerde ortak, kayda yazılır
@@ -108,6 +129,9 @@ export const useGameStore = create((set, get) => ({
   offlineReport: null, // { gold, seconds }
   lastPull: null, // { id, level, isNew }
   toast: null, // { id, text }
+  golden: null, // aktif altın yaratık { id, reward, ttl, x, y } (kayda yazılmaz)
+  goldenBuffLeft: 0, // Altın Coşkusu buff süresi (sn)
+  combo: 0, // ardışık hızlı klik sayacı (geçici)
   opMode: false, // test modu: klik hasarı 1Qi (kayda yazılmaz)
 
   setBuyAmount(amount) {
@@ -137,18 +161,26 @@ export const useGameStore = create((set, get) => ({
   clickAttack() {
     const s = get();
     if (!s.enemy || !s.loaded) return null;
-    let dmg = s.opMode ? 1e18 : clickDamage(s.heroLevel, s.prestigeLevels, s.artifacts, achCount(s));
+    let dmg = s.opMode ? 1e18 : clickDamage(s.heroLevel, s.prestigeLevels, s.artifacts, achCount(s), s.stardustLevels);
     if (skillActive(s, 'ofke')) dmg *= 5;
-    const crit = Math.random() < critChance(s.heroUpgrades, s.artifacts);
-    if (crit) dmg *= critMultiplier(s.heroUpgrades, s.artifacts);
+    if (s.goldenBuffLeft > 0) dmg *= 7;
+    // Kombo: 1.2sn içinde ardışık klik çarpanı büyütür (maks +%100)
+    const now = performance.now();
+    const combo = now - lastClickAt < COMBO_WINDOW ? Math.min(s.combo + 1, COMBO_MAX) : 1;
+    lastClickAt = now;
+    dmg *= 1 + Math.min(combo, COMBO_MAX) * 0.02;
+    const pb = npcPassiveBonus(s.npcLevels);
+    dmg *= pb.dmgMult;
+    const crit = Math.random() < critChance(s.heroUpgrades, s.artifacts) + pb.critChance;
+    if (crit) dmg *= critMultiplier(s.heroUpgrades, s.artifacts) + pb.critMult;
     const stats = {
       ...s.stats,
       totalClicks: s.stats.totalClicks + 1,
       totalCrits: s.stats.totalCrits + (crit ? 1 : 0),
       highestCrit: crit ? Math.max(s.stats.highestCrit, dmg) : s.stats.highestCrit,
     };
-    set({ stats });
-    get()._applyDamage(dmg);
+    set({ stats, combo });
+    get()._applyDamage(dmg, true);
     return { dmg, crit };
   },
 
@@ -173,9 +205,9 @@ export const useGameStore = create((set, get) => ({
     if (skillsChanged) set({ skillState });
 
     if (s.mode === 'boss') {
-      // Zaman Donması aktifken boss süresi akmaz
+      // Zaman Donması aktifken boss süresi akmaz; Öfkeli boss'ta hızlı akar
       if (!skillActive(s, 'zamanDonmasi')) {
-        const left = s.bossTimeLeft - dtSec;
+        const left = s.bossTimeLeft - dtSec * (s.enemy?.drainMult ?? 1);
         if (left <= 0) {
           sfx.bossFail();
           set({ mode: 'farm', bossTimeLeft: 0, enemy: makeCreature(s.stage) });
@@ -185,16 +217,71 @@ export const useGameStore = create((set, get) => ({
       }
     }
 
-    let dps = totalDps(s.npcLevels, s.prestigeLevels, s.artifacts, achCount(s));
+    let dps = totalDps(s.npcLevels, s.prestigeLevels, s.artifacts, achCount(s), s.stardustLevels);
+    dps *= npcPassiveBonus(s.npcLevels).dmgMult;
     if (skillActive(s, 'savasEmri')) dps *= 3;
-    if (dps > 0) get()._applyDamage(dps * dtSec);
+    if (dps > 0) get()._applyDamage(dps * dtSec, false);
 
-    // Başarım kontrolü (2 sn'de bir)
+    // Altın Yaratık: yoksa geri sayım işler, süre dolunca belirir; varsa ttl azalır
+    if (!s.golden) {
+      goldenTimer -= dtSec;
+      if (goldenTimer <= 0) {
+        goldenTimer = 60 + Math.random() * 100;
+        const reward = Math.random() < 0.6 ? 'gold' : 'frenzy';
+        set({ golden: { id: Date.now(), reward, ttl: GOLDEN_TTL, x: 14 + Math.random() * 68, y: 22 + Math.random() * 50 } });
+        sfx.reveal();
+      }
+    } else {
+      const ttl = s.golden.ttl - dtSec;
+      if (ttl <= 0) set({ golden: null });
+      else set({ golden: { ...s.golden, ttl } });
+    }
+    if (s.goldenBuffLeft > 0) set({ goldenBuffLeft: Math.max(0, s.goldenBuffLeft - dtSec) });
+    if (s.combo > 0 && performance.now() - lastClickAt > COMBO_WINDOW) set({ combo: 0 });
+
+    // Otomasyon (Yıldız Tozu ile açılır)
+    const sd = s.stardustLevels;
+    if ((sd.otoMeydan ?? 0) > 0 && s.mode === 'farm' && s.kills >= killsRequired(s.prestigeLevels)) {
+      get().challengeBoss();
+    }
+    if ((sd.otoSeviye ?? 0) > 0) {
+      autoTimer += dtSec;
+      if (autoTimer >= 0.5) { autoTimer = 0; get()._autoLevel(); }
+    }
+    if ((sd.otoPrestij ?? 0) > 0) {
+      if (s.stage !== lastStageSeen) { lastStageSeen = s.stage; stuckTimer = 0; }
+      else stuckTimer += dtSec;
+      if (stuckTimer >= 30 && s.runHighestStage >= PRESTIGE_STAGE) { stuckTimer = 0; get().doPrestige(); }
+    }
+
+    // Başarım + kilometre taşı kontrolü (2 sn'de bir)
     achTimer += dtSec;
     if (achTimer >= 2) {
       achTimer = 0;
       get()._checkAchievements();
+      get()._checkMilestones();
     }
+  },
+
+  _checkMilestones() {
+    const s = get();
+    const claimed = {};
+    let crystals = 0;
+    let last = null;
+    for (const m of MILESTONES) {
+      if (!s.milestones[m.stage] && s.highestStage >= m.stage) {
+        claimed[m.stage] = true;
+        crystals += m.crystals;
+        last = m;
+      }
+    }
+    if (!last) return;
+    set({
+      milestones: { ...s.milestones, ...claimed },
+      crystals: s.crystals + crystals,
+    });
+    get()._showToast(`🏁 Bölge ${last.stage}! +${fmt(crystals)} 💎`);
+    sfx.achievement();
   },
 
   _checkAchievements() {
@@ -214,20 +301,24 @@ export const useGameStore = create((set, get) => ({
     sfx.achievement();
   },
 
-  _applyDamage(amount) {
+  _applyDamage(amount, isClick = false) {
     const s = get();
     if (!s.enemy) return;
+    // Zırhlı boss: NPC (klik dışı) hasarına dirençli
+    if (s.enemy.kind === 'boss' && !isClick) amount *= s.enemy.dpsMult ?? 1;
     const hp = s.enemy.hp - amount;
     if (hp > 0) {
       set({ enemy: { ...s.enemy, hp } });
       return;
     }
     // Düşman öldü
-    let gmult = goldMultiplier(s.prestigeLevels, s.heroUpgrades, s.artifacts, achCount(s));
+    let gmult = goldMultiplier(s.prestigeLevels, s.heroUpgrades, s.artifacts, achCount(s), s.stardustLevels);
+    gmult *= npcPassiveBonus(s.npcLevels).goldMult;
     if (skillActive(s, 'altinYagmuru')) gmult *= 3;
+    if (s.goldenBuffLeft > 0) gmult *= 3;
     if (s.opMode) gmult *= 1000;
     if (s.enemy.kind === 'boss') {
-      const reward = bossGold(s.stage) * gmult;
+      const reward = bossGold(s.stage) * gmult * (s.enemy.goldMult ?? 1);
       const nextStage = Math.min(s.stage + 1, MAX_STAGE);
       sfx.bossWin();
       set({
@@ -258,13 +349,14 @@ export const useGameStore = create((set, get) => ({
       sfx.kill();
       if (justFilled) {
         sfx.boss();
+        const boss = makeBoss(s.stage);
         set({
           gold: s.gold + reward,
           stats,
           kills,
           mode: 'boss',
-          enemy: makeBoss(s.stage),
-          bossTimeLeft: bossTime(s.prestigeLevels, s.artifacts),
+          enemy: boss,
+          bossTimeLeft: bossTime(s.prestigeLevels, s.artifacts, s.stardustLevels) * boss.timeMult,
         });
       } else {
         set({ gold: s.gold + reward, stats, kills, enemy: makeCreature(s.stage) });
@@ -277,11 +369,48 @@ export const useGameStore = create((set, get) => ({
     const s = get();
     if (s.mode !== 'farm' || s.kills < killsRequired(s.prestigeLevels)) return;
     sfx.boss();
+    const boss = makeBoss(s.stage);
     set({
       mode: 'boss',
-      enemy: makeBoss(s.stage),
-      bossTimeLeft: bossTime(s.prestigeLevels, s.artifacts),
+      enemy: boss,
+      bossTimeLeft: bossTime(s.prestigeLevels, s.artifacts, s.stardustLevels) * boss.timeMult,
     });
+  },
+
+  // Oto-Seviye: en ucuz geliştirmeyi tekrar tekrar al (sessiz, ses yok)
+  // ponytail: cheapest-first, ROI optimizasyonu yok — yeterince ilerletir
+  _autoLevel() {
+    for (let i = 0; i < 40; i++) {
+      const s = get();
+      let best = { kind: 'hero' };
+      let bestCost = heroLevelCost(s.heroLevel);
+      for (const npc of NPCS) {
+        const c = npcLevelCost(npc, s.npcLevels[npc.id] ?? 0);
+        if (c < bestCost) { bestCost = c; best = { kind: 'npc', id: npc.id }; }
+      }
+      if (bestCost > s.gold) break;
+      if (best.kind === 'hero') set({ gold: s.gold - bestCost, heroLevel: s.heroLevel + 1 });
+      else set({ gold: s.gold - bestCost, npcLevels: { ...s.npcLevels, [best.id]: (s.npcLevels[best.id] ?? 0) + 1 } });
+    }
+  },
+
+  // ---- Altın Yaratık ----
+  clickGolden() {
+    const s = get();
+    if (!s.golden) return;
+    sfx.bossWin();
+    if (s.golden.reward === 'gold') {
+      const gmult = goldMultiplier(s.prestigeLevels, s.heroUpgrades, s.artifacts, achCount(s), s.stardustLevels);
+      const dps = totalDps(s.npcLevels, s.prestigeLevels, s.artifacts, achCount(s), s.stardustLevels);
+      const goldPerSec = (creatureGold(s.stage) / creatureHp(s.stage)) * dps;
+      // 120 sn üretim; erken oyun için tek yaratık altınının katıyla taban
+      const burst = Math.max(goldPerSec * 120, creatureGold(s.stage) * gmult * 60);
+      set({ gold: s.gold + burst, golden: null });
+      get()._showToast(`💰 Altın Yaratık! +${fmt(burst)} altın`);
+    } else {
+      set({ goldenBuffLeft: 20, golden: null });
+      get()._showToast('✨ Altın Coşkusu! 20sn ×7 klik ve ×3 altın');
+    }
   },
 
   // ---- Aktif yetenekler ----
@@ -427,13 +556,62 @@ export const useGameStore = create((set, get) => ({
   // ---- Prestij ----
   doPrestige() {
     const s = get();
-    const gain = crystalGain(s.runHighestStage, s.artifacts) * (s.opMode ? 1000 : 1);
+    const gain = crystalGain(s.runHighestStage, s.artifacts, s.stardustLevels) * (s.opMode ? 1000 : 1);
     if (gain <= 0) return;
     sfx.prestige();
     set({
       ...freshRunState(s.prestigeLevels),
       crystals: s.crystals + gain,
       totalPrestiges: s.totalPrestiges + 1,
+    });
+  },
+
+  // ---- Aşkınlık ----
+  doTranscend() {
+    const s = get();
+    if (s.highestStage < TRANSCEND_STAGE) return;
+    const gain = transcendGain(s.crystals) * (s.opMode ? 1000 : 1);
+    if (gain <= 0) return;
+    sfx.prestige();
+    // Koşu + kristal + prestij upgrade'leri sıfırlanır; artifact/başarım/stardust korunur
+    set({
+      ...freshRunState({}),
+      crystals: startingCrystals(s.stardustLevels),
+      prestigeLevels: {},
+      stardust: s.stardust + gain,
+      totalTranscends: s.totalTranscends + 1,
+    });
+    get()._showToast(`✦ Aşkınlık! +${gain} 💫 Yıldız Tozu`);
+  },
+
+  buyStardustUpgradeLevels(upgradeId, count) {
+    const s = get();
+    const up = STARDUST_UPGRADES.find((u) => u.id === upgradeId);
+    if (!up) return;
+    const level = s.stardustLevels[upgradeId] ?? 0;
+    const capped = Math.min(count, up.maxLevel - level);
+    if (capped <= 0) return;
+    const cost = bulkCost((l) => stardustUpgradeCost(up, l), level, capped);
+    if (s.stardust < cost) return;
+    sfx.buy();
+    set({
+      stardust: s.stardust - cost,
+      stardustLevels: { ...s.stardustLevels, [upgradeId]: level + capped },
+    });
+  },
+
+  buyStardustUpgradeMax(upgradeId) {
+    const s = get();
+    const up = STARDUST_UPGRADES.find((u) => u.id === upgradeId);
+    if (!up) return;
+    const level = s.stardustLevels[upgradeId] ?? 0;
+    const cap = Math.min(1000, up.maxLevel - level);
+    const { count, cost } = maxAffordable((l) => stardustUpgradeCost(up, l), level, s.stardust, cap);
+    if (count <= 0) return;
+    sfx.buy();
+    set({
+      stardust: s.stardust - cost,
+      stardustLevels: { ...s.stardustLevels, [upgradeId]: level + count },
     });
   },
 
@@ -483,10 +661,14 @@ export const useGameStore = create((set, get) => ({
       npcLevels: s.npcLevels,
       prestigeLevels: s.prestigeLevels,
       artifacts: s.artifacts,
+      stardust: s.stardust,
+      stardustLevels: s.stardustLevels,
       totalPulls: s.totalPulls,
       totalPrestiges: s.totalPrestiges,
+      totalTranscends: s.totalTranscends,
       stats: s.stats,
       achievements: s.achievements,
+      milestones: s.milestones,
       skillState: s.skillState,
       muted: s.muted,
       buyAmount: s.buyAmount,
@@ -508,10 +690,14 @@ export const useGameStore = create((set, get) => ({
       npcLevels: data.npcLevels ?? {},
       prestigeLevels: data.prestigeLevels ?? {},
       artifacts: data.artifacts ?? {},
+      stardust: data.stardust ?? 0,
+      stardustLevels: data.stardustLevels ?? {},
       totalPulls: data.totalPulls ?? 0,
       totalPrestiges: data.totalPrestiges ?? 0,
+      totalTranscends: data.totalTranscends ?? 0,
       stats: { ...DEFAULT_STATS, ...(data.stats ?? {}) },
       achievements: data.achievements ?? {},
+      milestones: data.milestones ?? {},
       skillState: data.skillState ?? {},
       muted: data.muted ?? false,
       buyAmount: data.buyAmount ?? 1,
@@ -534,12 +720,14 @@ export const useGameStore = create((set, get) => ({
 
 // Bileşenlerin kullandığı türetilmiş değerler
 export const selectors = {
-  clickDamage: (s) => clickDamage(s.heroLevel, s.prestigeLevels, s.artifacts, achCount(s)),
-  totalDps: (s) => totalDps(s.npcLevels, s.prestigeLevels, s.artifacts, achCount(s)),
-  critChance: (s) => critChance(s.heroUpgrades, s.artifacts),
-  critMultiplier: (s) => critMultiplier(s.heroUpgrades, s.artifacts),
-  crystalGain: (s) => crystalGain(s.runHighestStage, s.artifacts) * (s.opMode ? 1000 : 1),
+  clickDamage: (s) => clickDamage(s.heroLevel, s.prestigeLevels, s.artifacts, achCount(s), s.stardustLevels) * npcPassiveBonus(s.npcLevels).dmgMult,
+  totalDps: (s) => totalDps(s.npcLevels, s.prestigeLevels, s.artifacts, achCount(s), s.stardustLevels) * npcPassiveBonus(s.npcLevels).dmgMult,
+  critChance: (s) => critChance(s.heroUpgrades, s.artifacts) + npcPassiveBonus(s.npcLevels).critChance,
+  critMultiplier: (s) => critMultiplier(s.heroUpgrades, s.artifacts) + npcPassiveBonus(s.npcLevels).critMult,
+  crystalGain: (s) => crystalGain(s.runHighestStage, s.artifacts, s.stardustLevels) * (s.opMode ? 1000 : 1),
   prestigeUnlocked: (s) => s.highestStage >= PRESTIGE_STAGE,
   canPrestige: (s) => s.runHighestStage >= PRESTIGE_STAGE,
+  transcendUnlocked: (s) => s.highestStage >= TRANSCEND_STAGE,
+  transcendGain: (s) => transcendGain(s.crystals) * (s.opMode ? 1000 : 1),
   achievementCount: (s) => achCount(s),
 };

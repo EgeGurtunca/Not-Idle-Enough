@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { CREATURE_TYPES } from '../game/constants.js';
+import { CREATURE_TYPES, zoneTheme } from '../game/constants.js';
 
 // Deterministik RNG: aynı düşman hep aynı görünür
 function mulberry32(a) {
@@ -20,282 +20,312 @@ function disposeGroup(group) {
   });
 }
 
-// Tip konfigürasyonundan (constants.CREATURE_TYPES[].look) prosedürel canavar üret
+// Yaratık türünün "arch" bayrağı hangi gövde planını çizeceğimizi belirler.
+// Her plan; gövde, kafa, uzuvlar ve türe özel eklentileri (boynuz/kanat/kuyruk…) kurar.
 function buildCreature(enemy) {
   const look = CREATURE_TYPES[enemy.typeId]?.look ?? {};
   const rand = mulberry32(enemy.id * 9301 + 49297);
   const isBoss = enemy.kind === 'boss';
   const isBig = isBoss && enemy.big;
 
-  const baseColor = new THREE.Color(look.color ?? '#8a7f72');
-  if (isBig) baseColor.lerp(new THREE.Color('#c23a2e'), 0.35);
-  else if (isBoss) baseColor.lerp(new THREE.Color('#3a2e52'), 0.25);
+  const base = new THREE.Color(look.color ?? '#8a7f72');
+  if (isBig) base.lerp(new THREE.Color('#c8342a'), 0.32);
+  else if (isBoss) base.lerp(new THREE.Color('#3a2e52'), 0.22);
+  const dark = base.clone().multiplyScalar(0.55);
+  const light = base.clone().lerp(new THREE.Color('#ffffff'), 0.22);
 
   const group = new THREE.Group();
   const mats = [];
-  const mat = (opts) => {
-    const m = new THREE.MeshStandardMaterial({ flatShading: true, roughness: 0.65, ...opts });
+  const translucent = !!look.translucent;
+  const mkMat = (color, opts = {}) => {
+    const m = new THREE.MeshStandardMaterial({
+      color,
+      flatShading: true,
+      roughness: 0.62,
+      transparent: translucent,
+      opacity: translucent ? 0.68 : 1,
+      ...opts,
+    });
     mats.push(m);
     return m;
   };
 
-  const translucent = !!look.translucent;
-  const bodyMat = mat({
-    color: baseColor,
-    emissive: new THREE.Color('#f0a83c'),
-    emissiveIntensity: 0,
-    transparent: translucent,
-    opacity: translucent ? 0.72 : 1,
-  });
-  const darkMat = mat({
-    color: baseColor.clone().multiplyScalar(0.6),
-    transparent: translucent,
-    opacity: translucent ? 0.72 : 1,
-  });
-  const boneMat = mat({ color: 0xf2ead6, roughness: 0.45 });
+  const bodyMat = mkMat(base, { emissive: new THREE.Color('#f0a83c'), emissiveIntensity: 0 });
+  const darkMat = mkMat(dark);
+  const lightMat = mkMat(light);
+  const boneMat = mkMat(0xf3ecd8, { roughness: 0.4, transparent: false, opacity: 1 });
+  const clawMat = mkMat(0x20242c, { transparent: false, opacity: 1 });
 
-  // ---- Gövde ----
-  let body;
-  let bodyScaleY = 1;
-  let headY = 0.18;
-  let headZ = 0.8;
-  if (look.shape === 'serpent') {
-    body = new THREE.Mesh(new THREE.SphereGeometry(0.55, 10, 8), bodyMat);
-    body.position.set(0, 0.3, 0.5);
-    group.add(body);
-    let r = 0.46;
-    for (let i = 1; i <= 3; i++) {
-      const seg = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), bodyMat);
-      seg.position.set(Math.sin(i * 1.6) * 0.35, 0.3 - i * 0.2, 0.5 - i * 0.5);
-      group.add(seg);
-      r *= 0.84;
-    }
-    headY = 0.42;
-    headZ = 0.95;
-  } else if (look.shape === 'boxy') {
-    body = new THREE.Mesh(new THREE.DodecahedronGeometry(1.0, 0), bodyMat);
-    group.add(body);
-  } else {
-    body = new THREE.Mesh(new THREE.IcosahedronGeometry(1.0, 1), bodyMat);
-    bodyScaleY = look.shape === 'tall' ? 1.25 : 0.85 + rand() * 0.2;
-    body.scale.y = bodyScaleY;
-    if (look.shape === 'long') {
-      body.scale.z = 1.35;
-      body.scale.y *= 0.8;
-      bodyScaleY *= 0.8;
-    }
-    group.add(body);
-  }
+  // ---- Ortak parça yardımcıları ----
+  const add = (mesh, x, y, z, mat) => {
+    mesh.position.set(x, y, z);
+    if (mat) mesh.material = mat;
+    group.add(mesh);
+    return mesh;
+  };
+  const box = (w, h, d, mat = bodyMat) => new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  const sph = (r, mat = bodyMat, seg = 12) => new THREE.Mesh(new THREE.SphereGeometry(r, seg, seg), mat);
+  const cyl = (rt, rb, h, mat = darkMat, seg = 7) =>
+    new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), mat);
+  const cone = (r, h, mat = darkMat, seg = 6) => new THREE.Mesh(new THREE.ConeGeometry(r, h, seg), mat);
 
-  // ---- Gözler ----
-  const eyeCfg = look.eyes ?? {};
-  const eyeCount = eyeCfg.count ?? 2;
-  const glowColor = look.glowEyes ?? null;
-  const eyeMat = mat({ color: eyeCfg.color ?? 0xffffff, roughness: 0.3 });
-  const pupilMat = mat({ color: 0x111111, roughness: 0.4 });
-  const glowMat = glowColor
-    ? mat({ color: glowColor, emissive: new THREE.Color(glowColor), emissiveIntensity: 1.0 })
-    : null;
-  const eyePositions = [];
-  if (eyeCount === 2) {
-    const ex = 0.32 + rand() * 0.08;
-    eyePositions.push([-ex, headY, headZ], [ex, headY, headZ]);
-  } else {
-    eyePositions.push(
-      [-0.3, headY + 0.14, headZ], [0.3, headY + 0.14, headZ],
-      [-0.14, headY - 0.06, headZ + 0.06], [0.14, headY - 0.06, headZ + 0.06]
-    );
-  }
-  for (const [x, y, z] of eyePositions) {
-    const r = eyeCount === 2 ? 0.16 + rand() * 0.05 : 0.1;
-    if (eyeCfg.socket) {
-      // İskelet: boş, kapkara göz çukurları
-      const e = new THREE.Mesh(new THREE.SphereGeometry(r * 1.15, 10, 10), pupilMat);
-      e.position.set(x, y, z);
-      group.add(e);
-    } else if (glowMat) {
-      const e = new THREE.Mesh(new THREE.SphereGeometry(r * 0.85, 10, 10), glowMat);
-      e.position.set(x, y, z);
-      group.add(e);
-    } else {
-      const e = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 12), eyeMat);
-      e.position.set(x, y, z);
-      group.add(e);
-      const p = new THREE.Mesh(new THREE.SphereGeometry(r * 0.45, 8, 8), pupilMat);
-      p.position.set(x, y, z + r * 0.75);
-      group.add(p);
-    }
-  }
-
-  // ---- Kulaklar ----
-  if (look.ears) {
+  // Bir kafaya göz + (varsa) parlayan/boş göz çukuru yerleştir
+  const glow = look.glowEyes ? mkMat(look.glowEyes, { emissive: new THREE.Color(look.glowEyes), emissiveIntensity: 1.1, transparent: false, opacity: 1 }) : null;
+  const whiteMat = mkMat(0xffffff, { roughness: 0.3, transparent: false, opacity: 1 });
+  const pupilMat = mkMat(0x0b0b0f, { roughness: 0.4, transparent: false, opacity: 1 });
+  function eyes(hx, hy, hz, spread, r) {
     for (const sx of [-1, 1]) {
-      let ear;
-      if (look.ears === 'round') {
-        ear = new THREE.Mesh(new THREE.SphereGeometry(0.26, 10, 10), darkMat);
-        ear.scale.z = 0.45;
+      const ex = sx * spread;
+      if (look.eyes?.socket) {
+        add(sph(r * 1.1, pupilMat, 10), hx + ex, hy, hz);
+      } else if (glow) {
+        add(sph(r * 0.9, glow, 10), hx + ex, hy, hz);
       } else {
-        ear = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.55, 6), darkMat);
-        ear.rotation.z = -sx * 0.3;
-      }
-      ear.position.set(sx * 0.5, 0.85 * bodyScaleY + 0.15, 0);
-      group.add(ear);
-    }
-  }
-
-  // ---- Boynuzlar ----
-  const hornCount = look.horns ?? 0;
-  for (let i = 0; i < hornCount; i++) {
-    const horn = new THREE.Mesh(
-      new THREE.ConeGeometry(0.13 + rand() * 0.06, 0.5 + rand() * 0.3, 6),
-      boneMat
-    );
-    const sx = hornCount === 1 ? 0 : i === 0 ? -1 : 1;
-    horn.position.set(sx * 0.38, 0.9 * bodyScaleY + 0.15, 0);
-    horn.rotation.z = -sx * (0.3 + rand() * 0.2);
-    group.add(horn);
-  }
-
-  // ---- Burun / çene ----
-  if (look.snout === 'point') {
-    const snout = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.55, 6), darkMat);
-    snout.position.set(0, headY - 0.28, headZ + 0.25);
-    snout.rotation.x = Math.PI / 2;
-    group.add(snout);
-  } else if (look.snout === 'long') {
-    const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.26, 0.85), darkMat);
-    jaw.position.set(0, headY - 0.32, headZ + 0.45);
-    group.add(jaw);
-    for (const sx of [-0.16, 0, 0.16]) {
-      const tooth = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.14, 4), boneMat);
-      tooth.position.set(sx, headY - 0.5, headZ + 0.72);
-      group.add(tooth);
-    }
-  } else if (look.snout === 'tusk') {
-    const nose = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.24, 0.3, 8), darkMat);
-    nose.position.set(0, headY - 0.22, headZ + 0.25);
-    nose.rotation.x = Math.PI / 2;
-    group.add(nose);
-    for (const sx of [-1, 1]) {
-      const tusk = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.32, 5), boneMat);
-      tusk.position.set(sx * 0.35, headY - 0.35, headZ + 0.2);
-      tusk.rotation.z = sx * 0.5;
-      group.add(tusk);
-    }
-  }
-
-  // ---- Dişler ----
-  if (look.fangs) {
-    for (const sx of [-1, 1]) {
-      const fang = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.2, 4), boneMat);
-      fang.position.set(sx * 0.2, headY - 0.38, headZ + 0.12);
-      fang.rotation.x = Math.PI;
-      group.add(fang);
-    }
-  }
-
-  // ---- Kanatlar ----
-  if (look.wings) {
-    for (const sx of [-1, 1]) {
-      const wing = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.2, 4), darkMat);
-      wing.scale.z = 0.16;
-      wing.position.set(sx * 0.95, 0.35, -0.2);
-      wing.rotation.z = sx * 2.1;
-      group.add(wing);
-    }
-  }
-
-  // ---- Kuyruk ----
-  if (look.tail === 'thin') {
-    const tail = new THREE.Mesh(new THREE.ConeGeometry(0.09, 1.0, 6), darkMat);
-    tail.position.set(0.15, -0.2, -1.0);
-    tail.rotation.x = 1.25;
-    group.add(tail);
-  } else if (look.tail === 'spike') {
-    const tail = new THREE.Mesh(new THREE.ConeGeometry(0.17, 1.0, 5), darkMat);
-    tail.position.set(0, -0.15, -1.15);
-    tail.rotation.x = 1.45;
-    group.add(tail);
-  }
-
-  // ---- Akrep iğnesi ----
-  if (look.stinger) {
-    let y = 0.2;
-    let z = -0.9;
-    for (let i = 0; i < 3; i++) {
-      const seg = new THREE.Mesh(new THREE.SphereGeometry(0.16 - i * 0.03, 8, 8), darkMat);
-      seg.position.set(0, y, z);
-      group.add(seg);
-      y += 0.3;
-      z -= 0.12;
-    }
-    const tip = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.3, 5), boneMat);
-    tip.position.set(0, y + 0.05, z + 0.1);
-    tip.rotation.x = 2.6;
-    group.add(tip);
-  }
-
-  // ---- Kıskaçlar ----
-  if (look.claws) {
-    for (const sx of [-1, 1]) {
-      const claw = new THREE.Mesh(new THREE.SphereGeometry(0.27, 8, 8), darkMat);
-      claw.scale.set(1, 0.75, 1);
-      claw.position.set(sx * 0.75, -0.4, 0.6);
-      group.add(claw);
-    }
-  }
-
-  // ---- Örümcek bacakları ----
-  if (look.legs8) {
-    for (const sx of [-1, 1]) {
-      for (let i = 0; i < 4; i++) {
-        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.02, 1.1, 5), darkMat);
-        leg.position.set(sx * 0.85, -0.15, 0.45 - i * 0.3);
-        leg.rotation.z = sx * 1.15;
-        group.add(leg);
+        add(sph(r, whiteMat, 12), hx + ex, hy, hz);
+        add(sph(r * 0.45, pupilMat, 8), hx + ex, hy + 0.01, hz + r * 0.7);
       }
     }
   }
-
-  // ---- Cadı şapkası ----
-  if (look.hat) {
-    const hatMat = mat({ color: 0x2c2440, roughness: 0.6 });
-    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.06, 12), hatMat);
-    brim.position.set(0, 0.85 * bodyScaleY + 0.12, 0);
-    group.add(brim);
-    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.38, 0.85, 10), hatMat);
-    cone.position.set(0, 0.85 * bodyScaleY + 0.55, 0);
-    cone.rotation.z = 0.12;
-    group.add(cone);
+  function fangs(hx, hy, hz, spread) {
+    for (const sx of [-1, 1]) {
+      const f = cone(0.06, 0.2, boneMat, 4);
+      f.rotation.x = Math.PI;
+      add(f, hx + sx * spread, hy, hz);
+    }
+  }
+  function horns(hx, hy, hz, count, len = 0.55) {
+    for (let i = 0; i < count; i++) {
+      const sx = count === 1 ? 0 : i === 0 ? -1 : 1;
+      const h = cone(0.13, len, boneMat, 6);
+      h.rotation.z = -sx * 0.4;
+      h.rotation.x = -0.3;
+      add(h, hx + sx * 0.28, hy, hz);
+    }
+  }
+  function legs(y, positions, r, len, mat = darkMat) {
+    for (const [x, z] of positions) {
+      add(cyl(r, r * 0.8, len, mat), x, y - len / 2, z);
+      // pençe/pati
+      add(sph(r * 1.15, mat, 8), x, y - len + 0.04, z + 0.04);
+    }
   }
 
-  // ---- Boss süsleri ----
+  let mainBody = null; // nefes animasyonu için ana kütle
+
+  // ===== ARKETİPLER =====
+  const A = {
+    // Dört ayaklı: kafa öne (+Z) bakar; gövde Z boyunca uzanır, 4 köşede bacak, arkada kuyruk
+    quadruped() {
+      const bodyLen = look.longBody ? 1.9 : 1.35;
+      const bodyR = look.stocky ? 0.6 : 0.46;
+      const frontZ = bodyLen / 2;
+      const rearZ = -bodyLen / 2;
+      // gövde (Z ekseni boyunca yatık silindir + iki uç küre)
+      const torso = cyl(bodyR, bodyR, bodyLen, bodyMat, 10);
+      torso.rotation.x = Math.PI / 2;
+      add(torso, 0, 0.2, 0);
+      add(sph(bodyR * 1.0), 0, 0.2, rearZ); // arka but
+      mainBody = add(sph(bodyR * 1.04), 0, 0.26, frontZ - 0.05); // göğüs
+      // kafa (öne + yukarı)
+      const headR = bodyR * 0.78;
+      const headY = 0.52;
+      const headZ = frontZ + 0.24;
+      add(sph(headR, bodyMat, 12), 0, headY, headZ);
+      // burun (hep +Z ileri)
+      if (look.snout === 'long') {
+        add(box(0.32, 0.26, 0.55, darkMat), 0, headY - 0.09, headZ + 0.34);
+        for (const sx of [-0.1, 0.1]) add(cone(0.05, 0.13, boneMat, 4), sx, headY - 0.22, headZ + 0.56);
+      } else if (look.snout === 'point') {
+        const s = cone(0.18, 0.5, darkMat, 6);
+        s.rotation.x = Math.PI / 2;
+        add(s, 0, headY - 0.06, headZ + 0.32);
+      } else if (look.snout === 'tusk') {
+        add(sph(0.2, darkMat, 8), 0, headY - 0.1, headZ + 0.24);
+        for (const sx of [-1, 1]) {
+          const t = cone(0.06, 0.3, boneMat, 5);
+          t.rotation.z = sx * 0.5;
+          add(t, sx * 0.14, headY - 0.16, headZ + 0.28);
+        }
+      }
+      // kulaklar (tepede, X'te simetrik)
+      if (look.ears === 'round') for (const sx of [-1, 1]) { const e = sph(0.19, darkMat, 8); e.scale.z = 0.5; add(e, sx * 0.28, headY + 0.32, headZ - 0.05); }
+      if (look.ears === 'point') for (const sx of [-1, 1]) { const e = cone(0.14, 0.44, darkMat, 5); e.rotation.z = -sx * 0.25; add(e, sx * 0.24, headY + 0.4, headZ - 0.05); }
+      // gözler öne bakar (X'te açık = sol/sağ), burun/dişler önde
+      eyes(0, headY + 0.06, headZ + headR * 0.7, 0.19, 0.11);
+      if (look.fangs) fangs(0, headY - 0.24, headZ + headR * 0.55, 0.12);
+      if (look.horns) horns(0, headY + 0.34, headZ, look.horns);
+      // bacaklar (dört köşe: ön/arka × sol/sağ)
+      const lx = bodyR * 0.82;
+      legs(-0.02, [[lx, frontZ - 0.28], [-lx, frontZ - 0.28], [lx, rearZ + 0.28], [-lx, rearZ + 0.28]], 0.12, 0.62, darkMat);
+      // kuyruk (arkada -Z)
+      if (look.tail === 'thin') { const tl = cyl(0.05, 0.09, 1.0, darkMat, 6); tl.rotation.x = -0.8; add(tl, 0, 0.42, rearZ - 0.32); }
+      else if (look.tail === 'spike') { const tl = cone(0.16, 1.1, darkMat, 6); tl.rotation.x = -2.3; add(tl, 0, 0.28, rearZ - 0.42); }
+      else { const tl = cyl(0.06, 0.12, 0.7, darkMat, 6); tl.rotation.x = -1.1; add(tl, 0, 0.28, rearZ - 0.28); }
+    },
+
+    // İnsansı: dik gövde + kafa + 2 kol + 2 bacak
+    humanoid() {
+      const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.52, 1.05, 8), bodyMat);
+      mainBody = add(torso, 0, 0.35, 0);
+      // kafa
+      const head = sph(0.42, bodyMat, 12);
+      add(head, 0, 1.12, 0);
+      eyes(0, 1.16, 0.3, 0.16, 0.11);
+      if (look.fangs) fangs(0, 0.98, 0.34, 0.1);
+      if (look.snout === 'point') { const s = cone(0.14, 0.34, darkMat, 6); s.rotation.x = Math.PI / 2; add(s, 0, 1.05, 0.42); }
+      if (look.ears === 'point') for (const sx of [-1, 1]) { const e = cone(0.12, 0.4, darkMat, 5); e.rotation.z = -sx * 0.5; add(e, sx * 0.4, 1.28, 0); }
+      if (look.horns) horns(0, 1.5, 0, look.horns, 0.5);
+      // kollar
+      for (const sx of [-1, 1]) {
+        const arm = cyl(0.13, 0.15, 0.85, darkMat, 6);
+        arm.rotation.z = sx * 0.28;
+        add(arm, sx * 0.6, 0.42, 0.05);
+        add(sph(0.17, look.claws ? clawMat : darkMat, 8), sx * 0.74, -0.02, 0.1); // el/pençe
+      }
+      // bacaklar
+      for (const sx of [-1, 1]) { add(cyl(0.15, 0.13, 0.7, darkMat, 6), sx * 0.24, -0.5, 0); add(box(0.3, 0.14, 0.4, darkMat), sx * 0.24, -0.82, 0.08); }
+      // cadı şapkası
+      if (look.hat) {
+        const hatMat = mkMat(0x241c38, { transparent: false, opacity: 1 });
+        add(cyl(0.6, 0.6, 0.06, hatMat, 12), 0, 1.5, 0);
+        const c = cone(0.36, 0.8, hatMat, 10); c.rotation.z = 0.14; add(c, 0.03, 1.9, 0);
+      }
+    },
+
+    // Uçan: küçük gövde + geniş kanatlar + kafa
+    flyer() {
+      mainBody = add(sph(0.5, bodyMat, 12), 0, 0.2, 0);
+      const head = sph(0.34, bodyMat, 12);
+      add(head, 0, 0.55, 0.32);
+      eyes(0, 0.6, 0.6, 0.13, 0.09);
+      if (look.snout === 'point') { const beak = cone(0.13, 0.36, boneMat, 5); beak.rotation.x = Math.PI / 2; add(beak, 0, 0.5, 0.68); }
+      if (look.fangs) fangs(0, 0.44, 0.6, 0.09);
+      if (look.horns) horns(0, 0.82, 0.2, look.horns, 0.42);
+      // kanatlar: iki üçgen membran
+      for (const sx of [-1, 1]) {
+        const wing = new THREE.Mesh(new THREE.ConeGeometry(0.7, 1.7, 3), darkMat);
+        wing.scale.z = 0.12;
+        wing.rotation.z = sx * 1.9;
+        wing.rotation.y = sx * 0.35;
+        add(wing, sx * 1.0, 0.35, -0.15);
+      }
+      // ayak/pençe
+      for (const sx of [-1, 1]) add(cone(0.08, 0.3, clawMat, 4), sx * 0.18, -0.25, 0.1);
+      if (look.tail === 'spike') { const tl = cone(0.14, 1.0, darkMat, 6); tl.rotation.x = -2.4; add(tl, 0, 0.1, -0.7); }
+    },
+
+    // Yılan: dikey S kıvrımı + kafa
+    serpent() {
+      let x = -0.15, y = -0.85, z = 0, r = 0.42;
+      const segs = 7;
+      for (let i = 0; i < segs; i++) {
+        const s = add(sph(r, i === 0 ? bodyMat : bodyMat, 10), x, y, z);
+        if (i === Math.floor(segs / 2)) mainBody = s;
+        x = Math.sin(i * 1.15) * 0.45;
+        y += 0.34;
+        z = Math.cos(i * 1.15) * 0.2;
+        r *= 0.9;
+      }
+      // kafa
+      const head = sph(0.4, bodyMat, 12);
+      head.scale.z = 1.3;
+      add(head, x, y + 0.05, z + 0.15);
+      eyes(x, y + 0.12, z + 0.4, 0.15, 0.1);
+      // çatal dil
+      const tongue = cone(0.03, 0.3, mkMat(0xd23a3a, { transparent: false, opacity: 1 }), 4);
+      tongue.rotation.x = Math.PI / 2;
+      add(tongue, x, y, z + 0.6);
+      if (look.fangs) fangs(x, y - 0.1, z + 0.5, 0.1);
+    },
+
+    // Böceksi: yassı gövde + çok bacak + (varsa) kıskaç/iğne
+    bug() {
+      mainBody = add((() => { const b = sph(0.6, bodyMat, 12); b.scale.set(1, 0.55, 1.25); return b; })(), -0.1, 0, 0);
+      const head = sph(0.34, bodyMat, 12);
+      add(head, 0, 0.05, 0.7);
+      // gözler (çok gözlü olabilir)
+      const ec = look.eyes?.count ?? 2;
+      if (ec >= 4) { eyes(0, 0.14, 0.95, 0.22, 0.07); eyes(0, 0.0, 0.98, 0.1, 0.06); }
+      else eyes(0, 0.1, 0.95, 0.15, 0.09);
+      // bacaklar: yanlarda açılı
+      for (const sx of [-1, 1]) {
+        for (let i = 0; i < 4; i++) {
+          const leg = cyl(0.04, 0.03, 1.05, darkMat, 5);
+          leg.rotation.z = sx * (1.15 + (i - 1.5) * 0.05);
+          leg.rotation.x = (i - 1.5) * 0.35;
+          add(leg, sx * 0.5, 0.0, 0.35 - i * 0.32);
+        }
+      }
+      if (look.claws) for (const sx of [-1, 1]) { const cl = sph(0.2, darkMat, 8); cl.scale.set(1.4, 0.6, 1); add(cl, sx * 0.55, 0.02, 0.95); }
+      if (look.stinger) {
+        let sy = 0.1, sz = -0.7;
+        for (let i = 0; i < 3; i++) { add(sph(0.15 - i * 0.03, darkMat, 8), 0, sy, sz); sy += 0.28; sz -= 0.14; }
+        const tip = cone(0.09, 0.32, boneMat, 5); tip.rotation.x = 2.5; add(tip, 0, sy, sz + 0.12);
+      }
+    },
+
+    // Hayalet: konik dalgalı gövde + kafa
+    ghost() {
+      const body = new THREE.Mesh(new THREE.ConeGeometry(0.62, 1.5, 12), bodyMat);
+      mainBody = add(body, 0, 0.1, 0);
+      add(sph(0.55, bodyMat, 14), 0, 0.6, 0);
+      eyes(0, 0.68, 0.42, 0.2, 0.13);
+      // alt dalgalar
+      for (let i = 0; i < 4; i++) add(sph(0.16, bodyMat, 8), -0.42 + i * 0.28, -0.62, 0.2);
+    },
+  };
+
+  (A[look.arch] || A.quadruped)();
+
+  // ---- Büyük boss süsleri ----
   if (isBig) {
-    const spikeMat = mat({ color: 0x2c1f1a, flatShading: true });
-    const n = 8;
-    for (let i = 0; i < n; i++) {
-      const ang = (i / n) * Math.PI * 2;
-      const spike = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.42, 5), spikeMat);
-      spike.position.set(Math.cos(ang) * 1.1, Math.sin(ang) * 1.1 * bodyScaleY, -0.1);
+    const spikeMat = mkMat(0x2a1d18, { transparent: false, opacity: 1 });
+    for (let i = 0; i < 9; i++) {
+      const ang = (i / 9) * Math.PI * 2;
+      const spike = cone(0.11, 0.5, spikeMat, 5);
+      spike.position.set(Math.cos(ang) * 1.35, 0.2 + Math.sin(ang) * 1.0, -0.4);
       spike.rotation.z = ang - Math.PI / 2;
       group.add(spike);
     }
-    const goldMat = mat({ color: 0xf0a83c, roughness: 0.25, metalness: 0.7 });
-    for (let i = -1; i <= 1; i++) {
-      const tip = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.3, 4), goldMat);
-      tip.position.set(i * 0.28, 0.95 * bodyScaleY + 0.35 + (i === 0 ? 0.12 : 0), 0);
-      group.add(tip);
-    }
+    const goldMat = mkMat(0xf0a83c, { roughness: 0.25, metalness: 0.75, transparent: false, opacity: 1 });
+    for (let i = -1; i <= 1; i++) group.add(add(cone(0.1, 0.34, goldMat, 4), i * 0.3, 1.75 + (i === 0 ? 0.14 : 0), 0.1));
   }
 
-  const sizeByShape = look.shape === 'small' ? 0.85 : look.shape === 'big' ? 1.15 : 1;
-  const scale = (isBig ? 1.45 : isBoss ? 1.2 : 1) * sizeByShape;
-  group.scale.setScalar(scale);
-  group.userData = { bodyMat, body, baseScale: scale, translucent };
+  // Fallback: hiç mainBody atanmadıysa görünür bir kütle olsun
+  if (!mainBody) mainBody = add(sph(0.5), 0, 0.2, 0);
+
+  // ---- Otomatik çerçeveleme (kadraj garantili) ----
+  // Model yalnızca Y ekseni etrafında döndüğü için: yükseklik sabit kalır, sadece
+  // XZ ayak izi süpürülür. Bu yüzden ölçeği (a) dönerken en geniş hâlini veren XZ
+  // yarıçapına ve (b) sabit yüksekliğe göre kadraj yarıçapının altına kilitleriz.
+  // Böylece yaratık hangi açıda olursa olsun asla kadrajdan çıkmaz.
+  const model = new THREE.Group();
+  while (group.children.length) model.add(group.children[0]);
+  const bbox = new THREE.Box3().setFromObject(model);
+  const size = new THREE.Vector3();
+  const center = new THREE.Vector3();
+  bbox.getSize(size);
+  bbox.getCenter(center);
+  const xzRadius = 0.5 * Math.hypot(size.x, size.z) || 0.5; // dönüşte süpürülen yatay yarıçap
+  const halfH = size.y / 2 || 0.5;
+  // FRAME_HALF: kamera (fov 40, ~3.57 mesafe) merkez düzleminde güvenli yarı-çerçeve.
+  // margin: yaratığı biraz küçültür ve vuruş/bob paylarını bırakır (istek: daha küçük).
+  const FRAME_HALF = 1.2;
+  const margin = isBig ? 0.8 : isBoss ? 0.74 : 0.7;
+  const fit = Math.min((FRAME_HALF * margin) / xzRadius, (FRAME_HALF * margin) / halfH);
+  // sınırlayıcı kutuyu yatayda XZ merkezine, dikeyde kadraj ortasına (lookAt) hizala
+  model.position.set(-center.x * fit, -center.y * fit + 0.05, -center.z * fit);
+  model.scale.setScalar(fit);
+  group.add(model);
+
+  // Önden başlar, iki yana da salınır (sağ ve sol profil de görünür)
+  const baseRotY = 0;
+  group.rotation.y = baseRotY;
+  group.userData = { bodyMat, body: mainBody, baseScale: 1, baseRotY, translucent };
   return { group, mats };
 }
 
-export default function CreatureCanvas({ enemy, hitId }) {
+export default function CreatureCanvas({ enemy, hitId, stage }) {
   const mountRef = useRef(null);
   const stateRef = useRef({});
 
@@ -305,28 +335,32 @@ export default function CreatureCanvas({ enemy, hitId }) {
     const mount = mountRef.current;
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(300, 300, false);
+    renderer.setSize(320, 320, false);
     renderer.domElement.style.width = '100%';
     renderer.domElement.style.height = '100%';
     mount.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 50);
-    camera.position.set(0, 0.5, 5.4);
-    camera.lookAt(0, 0, 0);
+    camera.position.set(0.3, 0.7, 3.5);
+    camera.lookAt(0, 0.05, 0);
 
-    scene.add(new THREE.AmbientLight(0x9a8fb8, 1.0));
-    const key = new THREE.DirectionalLight(0xffd9a0, 1.9);
+    scene.add(new THREE.AmbientLight(0x9a8fb8, 0.95));
+    const key = new THREE.DirectionalLight(0xffe6b8, 2.1);
     key.position.set(3, 5, 4);
     scene.add(key);
-    const rim = new THREE.PointLight(0xe4574b, 0.7, 20);
-    rim.position.set(-3, -2, 2);
+    const rim = new THREE.PointLight(0xe4574b, 0.9, 22);
+    rim.position.set(-3.5, -1, 1.5);
     scene.add(rim);
+    st.rim = rim;
+    const fill = new THREE.DirectionalLight(0x8ea0ff, 0.5);
+    fill.position.set(-2, 1, 3);
+    scene.add(fill);
 
-    const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35 });
-    const shadow = new THREE.Mesh(new THREE.CircleGeometry(1.15, 24), shadowMat);
+    const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.32 });
+    const shadow = new THREE.Mesh(new THREE.CircleGeometry(1.2, 24), shadowMat);
     shadow.rotation.x = -Math.PI / 2;
-    shadow.position.y = -1.55;
+    shadow.position.y = -1.15;
     scene.add(shadow);
 
     Object.assign(st, {
@@ -344,26 +378,26 @@ export default function CreatureCanvas({ enemy, hitId }) {
       st.t += dt;
       const g = st.creature;
       if (g) {
-        const { baseScale, bodyMat, body, translucent } = g.userData;
+        const { baseScale, baseRotY, bodyMat, body, translucent } = g.userData;
         const bob = reduce ? 0 : Math.sin(st.t * 1.7);
-        g.position.y = bob * 0.14;
-        g.rotation.y = reduce ? 0 : Math.sin(st.t * 0.6) * 0.35;
-        const spawnT = Math.min((now - st.spawnAt) / 300, 1);
+        g.position.y = bob * 0.12;
+        g.rotation.y = reduce ? baseRotY : baseRotY + Math.sin(st.t * 0.5) * 0.6;
+        const spawnT = Math.min((now - st.spawnAt) / 320, 1);
         const spawnScale = 0.2 + 0.8 * (1 - Math.pow(1 - spawnT, 3));
         const hitT = st.hitAt ? Math.max(0, 1 - (now - st.hitAt) / 180) : 0;
         g.scale.set(
-          baseScale * spawnScale * (1 + 0.3 * hitT),
-          baseScale * spawnScale * (1 - 0.3 * hitT),
+          baseScale * spawnScale * (1 + 0.28 * hitT),
+          baseScale * spawnScale * (1 - 0.28 * hitT),
           baseScale * spawnScale
         );
         bodyMat.emissiveIntensity = hitT * 1.3;
         if (!reduce && body) {
-          const breathe = Math.sin(st.t * 2.6) * 0.025;
-          body.scale.x = 1 + breathe;
-          body.scale.z = 1 + breathe;
+          const breathe = Math.sin(st.t * 2.6) * 0.02;
+          body.scale.x = (body.userData.sx0 ?? 1) + breathe;
+          body.scale.z = (body.userData.sz0 ?? 1) + breathe;
         }
-        st.shadow.scale.setScalar((1 - (bob + 1) * 0.09) * baseScale);
-        st.shadowMat.opacity = (translucent ? 0.22 : 0.38) - (bob + 1) * 0.07;
+        st.shadow.scale.setScalar((1 - (bob + 1) * 0.08) * baseScale);
+        st.shadowMat.opacity = (translucent ? 0.2 : 0.34) - (bob + 1) * 0.06;
       }
       st.renderer.render(st.scene, st.camera);
     };
@@ -393,10 +427,16 @@ export default function CreatureCanvas({ enemy, hitId }) {
       st.mats.forEach((m) => m.dispose());
     }
     const { group, mats } = buildCreature(enemy);
+    // nefes animasyonu ana kütlenin başlangıç ölçeğini bozmasın
+    if (group.userData.body) {
+      group.userData.body.userData.sx0 = group.userData.body.scale.x;
+      group.userData.body.userData.sz0 = group.userData.body.scale.z;
+    }
     st.creature = group;
     st.mats = mats;
     st.scene.add(group);
     st.spawnAt = performance.now();
+    if (st.rim && stage) st.rim.color.set(zoneTheme(stage));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enemy?.id]);
 

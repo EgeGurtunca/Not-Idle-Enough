@@ -3,13 +3,19 @@ import {
   MINIBOSS_HP_MULT, MINIBOSS_GOLD_MULT, BOSS_HP_MULT, BOSS_GOLD_MULT,
   HERO_BASE_COST, HERO_COST_GROWTH, MILESTONE_EVERY, MILESTONE_MULT,
   NPC_LEVEL_COST_FACTOR, NPC_COST_GROWTH,
-  BOSS_TIME_BASE, PRESTIGE_STAGE, KILLS_PER_STAGE, NPCS, PRESTIGE_UPGRADES, HERO_UPGRADES,
+  BOSS_TIME_BASE, PRESTIGE_STAGE, TRANSCEND_STAGE, KILLS_PER_STAGE, NPCS,
+  PRESTIGE_UPGRADES, HERO_UPGRADES, STARDUST_UPGRADES,
   ARTIFACTS, RARITIES, ARTIFACT_MAX_LEVEL, PULL_COST_BASE, PULL_COST_GROWTH,
   ARTIFACT_UPGRADE_BASE, ARTIFACT_UPGRADE_GROWTH, ACHIEVEMENT_BONUS,
 } from './constants.js';
 
 // Başarım çarpanı: açılan her başarım hasarı ve altını %2 artırır
 export const achievementMult = (achCount = 0) => 1 + ACHIEVEMENT_BONUS * achCount;
+
+// ---- Aşkınlık (Yıldız Tozu) çarpanları ----
+export const stardustDamageMult = (sd = {}) => 1 + 0.4 * (sd.yildizGucu ?? 0);
+export const stardustGoldMult = (sd = {}) => 1 + 0.5 * (sd.yildizServeti ?? 0);
+export const stardustCrystalMult = (sd = {}) => 1 + 0.3 * (sd.yildizBilgeligi ?? 0);
 
 export const isBossStage = (stage) => stage % 10 === 0;
 
@@ -35,12 +41,12 @@ export const bossGold = (stage) =>
 const milestoneMult = (level) => Math.pow(MILESTONE_MULT, Math.floor(level / MILESTONE_EVERY));
 
 // ---- Kahraman ----
-export function clickDamage(heroLevel, prestigeLevels = {}, artifacts = {}, achCount = 0) {
+export function clickDamage(heroLevel, prestigeLevels = {}, artifacts = {}, achCount = 0, sd = {}) {
   const keskin = prestigeLevels?.keskinVurus ?? 0;
   const art = artifactBonuses(artifacts);
   return (
     (1 + heroLevel) * milestoneMult(heroLevel) * (1 + 0.5 * keskin) * (1 + art.click) *
-    achievementMult(achCount)
+    achievementMult(achCount) * stardustDamageMult(sd)
   );
 }
 
@@ -62,20 +68,20 @@ export function heroUpgradeCost(upgrade, level) {
 }
 
 // ---- NPC ----
-export function npcDps(npc, level, prestigeLevels = {}, artifacts = {}, achCount = 0) {
+export function npcDps(npc, level, prestigeLevels = {}, artifacts = {}, achCount = 0, sd = {}) {
   if (level <= 0) return 0;
   const komutan = prestigeLevels?.komutanlik ?? 0;
   const art = artifactBonuses(artifacts);
   return (
     npc.baseDps * level * milestoneMult(level) * (1 + 0.5 * komutan) * (1 + art.dps) *
-    achievementMult(achCount)
+    achievementMult(achCount) * stardustDamageMult(sd)
   );
 }
 
-export function totalDps(npcLevels = {}, prestigeLevels = {}, artifacts = {}, achCount = 0) {
+export function totalDps(npcLevels = {}, prestigeLevels = {}, artifacts = {}, achCount = 0, sd = {}) {
   let sum = 0;
   for (const npc of NPCS) {
-    sum += npcDps(npc, npcLevels[npc.id] ?? 0, prestigeLevels, artifacts, achCount);
+    sum += npcDps(npc, npcLevels[npc.id] ?? 0, prestigeLevels, artifacts, achCount, sd);
   }
   return sum;
 }
@@ -107,18 +113,21 @@ export function maxAffordable(costFn, fromLevel, gold, cap = 1000) {
 }
 
 // ---- Altın çarpanı ----
-export function goldMultiplier(prestigeLevels = {}, heroUpgrades = {}, artifacts = {}, achCount = 0) {
+export function goldMultiplier(prestigeLevels = {}, heroUpgrades = {}, artifacts = {}, achCount = 0, sd = {}) {
   const altinP = prestigeLevels?.altinDokunus ?? 0;
   const bereket = heroUpgrades?.altinBereketi ?? 0;
   const art = artifactBonuses(artifacts);
-  return (1 + 0.35 * altinP) * (1 + 0.05 * bereket) * (1 + art.gold) * achievementMult(achCount);
+  return (
+    (1 + 0.35 * altinP) * (1 + 0.05 * bereket) * (1 + art.gold) *
+    achievementMult(achCount) * stardustGoldMult(sd)
+  );
 }
 
 // ---- Boss süresi ----
-export function bossTime(prestigeLevels = {}, artifacts = {}) {
+export function bossTime(prestigeLevels = {}, artifacts = {}, sd = {}) {
   const zaman = prestigeLevels?.zamanBukucu ?? 0;
   const art = artifactBonuses(artifacts);
-  return BOSS_TIME_BASE + 2 * zaman + art.bossTime;
+  return BOSS_TIME_BASE + 2 * zaman + art.bossTime + 3 * (sd.yildizKalkani ?? 0);
 }
 
 // ---- Boss için gereken yaratık sayısı (Sürek Avı ile azalır) ----
@@ -128,10 +137,12 @@ export function killsRequired(prestigeLevels = {}) {
 }
 
 // ---- Prestij ----
-export function crystalGain(runHighestStage, artifacts = {}) {
+export function crystalGain(runHighestStage, artifacts = {}, sd = {}) {
   if (runHighestStage < PRESTIGE_STAGE) return 0;
   const art = artifactBonuses(artifacts);
-  return Math.floor(10 * Math.pow((runHighestStage - 90) / 10, 1.8) * (1 + art.crystal));
+  return Math.floor(
+    10 * Math.pow((runHighestStage - 90) / 10, 1.8) * (1 + art.crystal) * stardustCrystalMult(sd)
+  );
 }
 
 export function prestigeUpgradeCost(upgrade, level) {
@@ -169,4 +180,20 @@ export function startingGold(prestigeLevels = {}) {
   return lv > 0 ? 1000 * Math.pow(10, lv - 1) : 0;
 }
 
-export { PRESTIGE_UPGRADES, HERO_UPGRADES };
+// ---- Aşkınlık ----
+// Bankadaki kristale göre Yıldız Tozu; her aşkınlık için kristal biriktirmen gerekir.
+export function transcendGain(crystals) {
+  if (crystals < 30) return 0;
+  return Math.floor(8 * Math.sqrt(crystals / 2000));
+}
+
+export function stardustUpgradeCost(upgrade, level) {
+  return Math.ceil(upgrade.baseCost * Math.pow(upgrade.costGrowth, level));
+}
+
+export function startingCrystals(stardustLevels = {}) {
+  const lv = stardustLevels?.yildizBaslangici ?? 0;
+  return lv > 0 ? 50 * Math.pow(3, lv - 1) : 0;
+}
+
+export { PRESTIGE_UPGRADES, HERO_UPGRADES, STARDUST_UPGRADES, TRANSCEND_STAGE };

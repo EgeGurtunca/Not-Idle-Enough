@@ -8,6 +8,7 @@ import HeroPanel from './components/HeroPanel.jsx';
 import NpcPanel from './components/NpcPanel.jsx';
 import ArtifactPanel from './components/ArtifactPanel.jsx';
 import PrestigePanel from './components/PrestigePanel.jsx';
+import TranscendPanel from './components/TranscendPanel.jsx';
 import AchievementsPanel from './components/AchievementsPanel.jsx';
 import SettingsPanel from './components/SettingsPanel.jsx';
 import OfflineModal from './components/OfflineModal.jsx';
@@ -21,20 +22,24 @@ async function boot() {
   setupAutosave();
 }
 
-const TABS = [
-  { id: 'hero', label: 'Kahraman' },
-  { id: 'npc', label: 'Yoldaşlar' },
-  { id: 'artifact', label: 'Sandık' },
-  { id: 'prestige', label: 'Prestij' },
-  { id: 'achievements', label: 'Başarım' },
-  { id: 'settings', label: 'Ayarlar' },
-];
-
 export default function App() {
   const loaded = useGameStore((s) => s.loaded);
   const canPrestige = useGameStore(selectors.canPrestige);
+  const transcendUnlocked = useGameStore(selectors.transcendUnlocked);
+  const canTranscend = useGameStore((s) => selectors.transcendGain(s) > 0);
   const toast = useGameStore((s) => s.toast);
   const [tab, setTab] = useState('hero');
+
+  // Aşkınlık sekmesi yalnızca Bölge 500'e ulaşınca belirir
+  const TABS = [
+    { id: 'hero', label: 'Kahraman' },
+    { id: 'npc', label: 'Yoldaşlar' },
+    { id: 'artifact', label: 'Sandık' },
+    { id: 'prestige', label: 'Prestij' },
+    ...(transcendUnlocked ? [{ id: 'transcend', label: 'Aşkınlık' }] : []),
+    { id: 'achievements', label: 'Başarım' },
+    { id: 'settings', label: 'Ayarlar' },
+  ];
 
   useEffect(() => {
     boot();
@@ -59,6 +64,7 @@ export default function App() {
               >
                 {t.label}
                 {t.id === 'prestige' && canPrestige && <span className="tab-dot" />}
+                {t.id === 'transcend' && canTranscend && <span className="tab-dot stardust-dot" />}
               </button>
             ))}
           </nav>
@@ -67,6 +73,7 @@ export default function App() {
             {tab === 'npc' && <NpcPanel />}
             {tab === 'artifact' && <ArtifactPanel />}
             {tab === 'prestige' && <PrestigePanel />}
+            {tab === 'transcend' && <TranscendPanel />}
             {tab === 'achievements' && <AchievementsPanel />}
             {tab === 'settings' && <SettingsPanel />}
           </div>

@@ -1,6 +1,7 @@
 import { useGameStore, selectors } from '../store/gameStore.js';
 import { ACHIEVEMENTS, ACHIEVEMENT_BONUS, ARTIFACTS } from '../game/constants.js';
 import { fmt } from '../utils/format.js';
+import StatsGraph from './StatsGraph.jsx';
 
 function statValue(s, stat) {
   switch (stat) {
@@ -38,6 +39,7 @@ export default function AchievementsPanel() {
           <span>🪙 Kazanılan altın: {fmt(stats.totalGoldEarned)}</span>
           <span>⚡ En büyük kritik: {fmt(stats.highestCrit)}</span>
         </div>
+        <StatsGraph />
       </div>
 
       {ACHIEVEMENTS.map((a) => {

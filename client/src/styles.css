@@ -41,6 +41,16 @@ button {
   font-family: inherit;
   color: inherit;
   cursor: pointer;
+  touch-action: manipulation; /* çift dokunma yakınlaştırma gecikmesini kaldır */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Dokunmatikte hızlı tıklarken metin seçimini engelle */
+.arena,
+.tabs,
+.skill-bar {
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 button:disabled {
@@ -119,6 +129,11 @@ button:disabled {
   box-shadow: 0 0 14px -6px var(--arcane);
 }
 
+.chip-stardust {
+  color: #ffd86b;
+  box-shadow: 0 0 14px -5px #ffd86b;
+}
+
 .op-btn {
   font-family: var(--font-mono);
   font-size: 12px;
@@ -171,8 +186,13 @@ button:disabled {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(360px 360px at 50% 46%, rgba(240, 168, 60, 0.07), transparent 70%);
+  background: radial-gradient(
+    440px 440px at 50% 46%,
+    color-mix(in srgb, var(--zone, #f0a83c) 12%, transparent),
+    transparent 70%
+  );
   pointer-events: none;
+  transition: background 0.6s ease;
 }
 
 .stage-head {
@@ -238,6 +258,11 @@ button:disabled {
   border-color: var(--blood);
   color: var(--blood);
   box-shadow: 0 0 10px -3px var(--blood);
+}
+
+.enemy-badge.modifier {
+  border-width: 1px;
+  box-shadow: 0 0 10px -3px currentColor;
 }
 
 .enemy-name {
@@ -499,6 +524,30 @@ button:disabled {
   color: var(--bone-dim);
 }
 
+.stats-graph {
+  margin-top: 10px;
+}
+
+.stats-graph-head {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--bone-dim);
+  margin-bottom: 4px;
+}
+
+.spark {
+  width: 100%;
+  height: 34px;
+  display: block;
+}
+
+.spark polyline {
+  fill: none;
+  stroke: var(--ember);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
 .ach-row.unlocked {
   border-color: rgba(127, 191, 142, 0.4);
 }
@@ -680,6 +729,12 @@ button:disabled {
   color: var(--bone-dim);
 }
 
+.combo {
+  color: var(--ember);
+  font-weight: 600;
+  animation: skillpulse 0.5s ease-in-out infinite;
+}
+
 .floater {
   position: absolute;
   z-index: 5;
@@ -699,10 +754,95 @@ button:disabled {
   }
 }
 
+.golden {
+  position: absolute;
+  z-index: 6;
+  width: 62px;
+  height: 62px;
+  display: grid;
+  place-items: center;
+  font-size: 34px;
+  border-radius: 50%;
+  border: 2px solid #ffd86b;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 240, 190, 0.35), rgba(255, 216, 107, 0.08));
+  box-shadow: 0 0 18px 2px rgba(255, 216, 107, 0.6);
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  animation: goldenpulse 1s ease-in-out infinite;
+}
+
+.golden::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: conic-gradient(#ffd86b calc(var(--ttl, 1) * 360deg), transparent 0);
+  -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+  mask: radial-gradient(closest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+}
+
+@keyframes goldenpulse {
+  50% {
+    box-shadow: 0 0 26px 6px rgba(255, 216, 107, 0.85);
+  }
+}
+
 .floater.crit {
   font-size: 32px;
   color: var(--blood);
   text-shadow: 0 0 14px rgba(228, 87, 75, 0.7), 0 2px 6px rgba(0, 0, 0, 0.7);
+}
+
+.floater.coin {
+  font-size: 26px;
+  animation: floatup 0.85s cubic-bezier(0.2, -0.4, 0.6, 1) forwards;
+}
+
+/* Boss giriş kartı */
+.boss-intro {
+  position: absolute;
+  z-index: 8;
+  top: 42%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+  animation: bossintro 1.6s ease-out forwards;
+}
+
+.boss-intro-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 3px;
+  color: var(--ember);
+}
+
+.boss-intro-name {
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--bone);
+  text-shadow: 0 2px 12px #000;
+}
+
+.boss-intro.big .boss-intro-label {
+  color: var(--blood);
+}
+
+.boss-intro.big .boss-intro-name {
+  color: var(--blood);
+  text-shadow: 0 0 22px rgba(228, 87, 75, 0.6), 0 2px 12px #000;
+}
+
+@keyframes bossintro {
+  0% { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
+  18% { transform: translate(-50%, -50%) scale(1.08); opacity: 1; }
+  30% { transform: translate(-50%, -50%) scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
 }
 
 /* ---- Sağ panel ---- */
@@ -717,6 +857,12 @@ button:disabled {
 .tabs {
   display: flex;
   border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .tab {
@@ -832,6 +978,15 @@ button:disabled {
   color: var(--moss);
 }
 
+.row-passive {
+  font-size: 11.5px;
+  color: var(--bone-dim);
+}
+
+.row-passive.on {
+  color: var(--arcane);
+}
+
 /* ---- Butonlar ---- */
 .buy {
   display: flex;
@@ -876,6 +1031,23 @@ button:disabled {
   background: var(--stone-2);
   border-color: var(--line);
   color: var(--bone-dim);
+}
+
+.buy.stardust {
+  border-color: #c79a3a;
+  background: linear-gradient(180deg, #ffd86b, #e0a93c);
+  color: #2a1e05;
+}
+
+.buy.stardust:disabled {
+  background: var(--stone-2);
+  border-color: var(--line);
+  color: var(--bone-dim);
+}
+
+.stardust-dot {
+  background: #ffd86b;
+  box-shadow: 0 0 8px #ffd86b;
 }
 
 .amount-toggle {
@@ -1009,6 +1181,31 @@ button:disabled {
 .prestige-hint {
   font-size: 13.5px;
   color: var(--bone-dim);
+}
+
+/* Aşkınlık (Yıldız Tozu) */
+.transcend-star {
+  color: #ffd86b;
+  text-shadow: 0 0 26px #ffd86b;
+}
+
+.transcend-fill {
+  background: linear-gradient(90deg, #e0a93c, #ffe8a0);
+}
+
+.transcend-box {
+  border-color: rgba(255, 216, 107, 0.4);
+}
+
+.stardust-text {
+  color: #ffd86b;
+}
+
+.transcend-btn {
+  border-color: #c79a3a;
+  background: linear-gradient(180deg, #ffd86b, #e0a93c);
+  color: #2a1e05;
+  box-shadow: 0 4px 22px -8px #ffd86b;
 }
 
 /* ---- Sandık (artifact) ---- */

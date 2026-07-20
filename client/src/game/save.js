@@ -12,15 +12,16 @@ function computeOffline(data, updatedAt) {
   );
   if (elapsed < 60) return null; // 1 dakikadan kısa aralar için gösterme
   const artifacts = data.artifacts ?? {};
+  const sd = data.stardustLevels ?? {};
   const achCount = Object.keys(data.achievements ?? {}).length;
-  const dps = totalDps(data.npcLevels ?? {}, data.prestigeLevels ?? {}, artifacts, achCount);
+  const dps = totalDps(data.npcLevels ?? {}, data.prestigeLevels ?? {}, artifacts, achCount, sd);
   if (dps <= 0) return null;
   const stage = Math.max(1, data.stage ?? 1);
   const kills = (elapsed * dps) / creatureHp(stage);
   const gold =
     kills *
     creatureGold(stage) *
-    goldMultiplier(data.prestigeLevels ?? {}, data.heroUpgrades ?? {}, artifacts, achCount) *
+    goldMultiplier(data.prestigeLevels ?? {}, data.heroUpgrades ?? {}, artifacts, achCount, sd) *
     (1 + artifactBonuses(artifacts).offline);
   if (gold < 1) return null;
   return { gold, seconds: elapsed };

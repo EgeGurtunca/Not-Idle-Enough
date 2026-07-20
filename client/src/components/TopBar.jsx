@@ -6,9 +6,12 @@ export default function TopBar() {
   const crystals = useGameStore((s) => s.crystals);
   const highest = useGameStore((s) => s.highestStage);
   const prestiges = useGameStore((s) => s.totalPrestiges);
+  const stardust = useGameStore((s) => s.stardust);
+  const transcends = useGameStore((s) => s.totalTranscends);
   const opMode = useGameStore((s) => s.opMode);
   const toggleOp = useGameStore((s) => s.toggleOp);
   const showCrystals = crystals > 0 || prestiges > 0 || highest >= 100;
+  const showStardust = stardust > 0 || transcends > 0 || highest >= 500;
 
   return (
     <header className="topbar">
@@ -20,6 +23,11 @@ export default function TopBar() {
         {showCrystals && (
           <span className="chip chip-crystal" title="Kristal">
             💎 {fmt(crystals)}
+          </span>
+        )}
+        {showStardust && (
+          <span className="chip chip-stardust" title="Yıldız Tozu">
+            💫 {fmt(stardust)}
           </span>
         )}
       </div>
