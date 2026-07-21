@@ -328,7 +328,8 @@ button:disabled {
 /* İmza öğesi: rünik sigil halkası — boss savaşında geri sayım olarak erir */
 .sigil {
   position: relative;
-  width: min(400px, 58vw, 49vh);
+  /* kalan dikey alanı doldur: viewport − (üst bar + arena chrome) */
+  width: min(400px, 58vw, calc(100dvh - 340px));
   aspect-ratio: 1;
   display: grid;
   place-items: center;
@@ -1686,6 +1687,42 @@ button:disabled {
 }
 
 /* ---- Duyarlılık ve erişilebilirlik ---- */
+/* Kısa yükseklikli ekranlar (laptop): arena tek ekrana sığsın, kaydırma/kırpma olmasın */
+@media (max-height: 880px) {
+  .arena {
+    gap: 8px;
+    padding: 10px 20px;
+  }
+  .stage-zone {
+    font-size: 12.5px;
+    letter-spacing: 2.5px;
+  }
+  .stage-no {
+    font-size: 25px;
+  }
+  .enemy-name {
+    font-size: 17px;
+  }
+  .enemy-name.big-boss {
+    font-size: 20px;
+  }
+  .under-enemy {
+    min-height: 34px;
+  }
+  .battle-stats {
+    font-size: 12px;
+    gap: 14px;
+  }
+  .skill-bar {
+    gap: 8px;
+  }
+  .skill {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+  }
+}
+
 @media (max-width: 920px) {
   .app {
     height: auto;

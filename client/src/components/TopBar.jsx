@@ -9,6 +9,8 @@ export default function TopBar() {
   const prestiges = useGameStore((s) => s.totalPrestiges);
   const stardust = useGameStore((s) => s.stardust);
   const transcends = useGameStore((s) => s.totalTranscends);
+  const opMode = useGameStore((s) => s.opMode);
+  const toggleOp = useGameStore((s) => s.toggleOp);
   const { t } = useT();
   const showCrystals = crystals > 0 || prestiges > 0 || highest >= 100;
   const showStardust = stardust > 0 || transcends > 0 || highest >= 500;
@@ -31,6 +33,14 @@ export default function TopBar() {
           </span>
         )}
       </div>
+      <button
+        type="button"
+        className={`op-btn ${opMode ? 'on' : ''}`}
+        onClick={toggleOp}
+        title={t('op_title')}
+      >
+        OP
+      </button>
       <div className="record">
         {t('record', { n: highest })}
         {prestiges > 0 && <span className="record-sub">{t('record_run', { n: prestiges })}</span>}
