@@ -141,7 +141,7 @@ export function crystalGain(runHighestStage, artifacts = {}, sd = {}) {
   if (runHighestStage < PRESTIGE_STAGE) return 0;
   const art = artifactBonuses(artifacts);
   return Math.floor(
-    10 * Math.pow((runHighestStage - 90) / 10, 1.8) * (1 + art.crystal) * stardustCrystalMult(sd)
+    20 * Math.pow((runHighestStage - 90) / 10, 2.2) * (1 + art.crystal) * stardustCrystalMult(sd)
   );
 }
 

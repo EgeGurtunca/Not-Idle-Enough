@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useGameStore, selectors } from './store/gameStore.js';
+import { useT } from './game/i18n.js';
 import { loadGame, setupAutosave } from './game/save.js';
 import { startLoop } from './game/loop.js';
 import TopBar from './components/TopBar.jsx';
@@ -28,17 +29,18 @@ export default function App() {
   const transcendUnlocked = useGameStore(selectors.transcendUnlocked);
   const canTranscend = useGameStore((s) => selectors.transcendGain(s) > 0);
   const toast = useGameStore((s) => s.toast);
+  const { t } = useT();
   const [tab, setTab] = useState('hero');
 
   // Aşkınlık sekmesi yalnızca Bölge 500'e ulaşınca belirir
   const TABS = [
-    { id: 'hero', label: 'Kahraman' },
-    { id: 'npc', label: 'Yoldaşlar' },
-    { id: 'artifact', label: 'Sandık' },
-    { id: 'prestige', label: 'Prestij' },
-    ...(transcendUnlocked ? [{ id: 'transcend', label: 'Aşkınlık' }] : []),
-    { id: 'achievements', label: 'Başarım' },
-    { id: 'settings', label: 'Ayarlar' },
+    { id: 'hero', label: t('tab_hero') },
+    { id: 'npc', label: t('tab_npc') },
+    { id: 'artifact', label: t('tab_artifact') },
+    { id: 'prestige', label: t('tab_prestige') },
+    ...(transcendUnlocked ? [{ id: 'transcend', label: t('tab_transcend') }] : []),
+    { id: 'achievements', label: t('tab_achievements') },
+    { id: 'settings', label: t('tab_settings') },
   ];
 
   useEffect(() => {
@@ -46,7 +48,7 @@ export default function App() {
   }, []);
 
   if (!loaded) {
-    return <div className="loading">Zindan kapıları açılıyor…</div>;
+    return <div className="loading">{t('loading')}</div>;
   }
 
   return (

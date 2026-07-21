@@ -4,7 +4,7 @@ export const KILLS_PER_STAGE = 10; // boss gelmeden önce kesilecek yaratık say
 export const BOSS_TIME_BASE = 30; // saniye
 export const PRESTIGE_STAGE = 100; // prestijin açıldığı stage
 export const TRANSCEND_STAGE = 500; // aşkınlığın açıldığı stage (= son bölge)
-export const MAX_STAGE = 500; // son bölge
+export const MAX_STAGE = 500; // (artık sert sınır değil — stage sonsuz; 500 = aşkınlık eşiği)
 export const OFFLINE_CAP_HOURS = 10;
 export const AUTOSAVE_MS = 20000;
 
@@ -35,13 +35,13 @@ export const BOSS_GOLD_MULT = 34;
 
 // Kahraman (klik)
 export const HERO_BASE_COST = 4;
-export const HERO_COST_GROWTH = 1.14;
-export const MILESTONE_EVERY = 20; // her 20 seviyede hasar x2
+export const HERO_COST_GROWTH = 1.056;
+export const MILESTONE_EVERY = 15; // her 15 seviyede hasar x2
 export const MILESTONE_MULT = 2;
 
 // NPC seviye maliyeti: unlockCost * NPC_LEVEL_COST_FACTOR * NPC_COST_GROWTH^seviye
 export const NPC_LEVEL_COST_FACTOR = 0.075;
-export const NPC_COST_GROWTH = 1.12;
+export const NPC_COST_GROWTH = 1.056;
 
 // ---- Kahraman upgrade'leri (altınla, prestijde sıfırlanır) ----
 export const HERO_UPGRADES = [

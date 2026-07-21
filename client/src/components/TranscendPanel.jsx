@@ -3,6 +3,7 @@ import { useGameStore, selectors } from '../store/gameStore.js';
 import { TRANSCEND_STAGE, STARDUST_UPGRADES } from '../game/constants.js';
 import { stardustUpgradeCost, startingCrystals, bulkCost, maxAffordable } from '../game/formulas.js';
 import { saveGame } from '../game/save.js';
+import { useT } from '../game/i18n.js';
 import { fmt } from '../utils/format.js';
 import AmountToggle from './AmountToggle.jsx';
 
@@ -11,10 +12,12 @@ function UpgradeRow({ up, amount }) {
   const level = useGameStore((s) => s.stardustLevels[up.id] ?? 0);
   const buyLevels = useGameStore((s) => s.buyStardustUpgradeLevels);
   const buyMax = useGameStore((s) => s.buyStardustUpgradeMax);
+  const { t, dnd } = useT();
 
   const maxed = level >= up.maxLevel;
   const remaining = up.maxLevel - level;
   const costFn = (l) => stardustUpgradeCost(up, l);
+  const loc = dnd('starUp', up.id, up.name, up.desc);
 
   let count = 0;
   let cost = 0;
@@ -33,16 +36,16 @@ function UpgradeRow({ up, amount }) {
       <span className="row-emoji">{up.emoji}</span>
       <div className="row-info">
         <div className="row-name">
-          {up.name}{' '}
+          {loc.name}{' '}
           <span className="row-level">
-            sv {level}
+            {t('lv')} {level}
             {Number.isFinite(up.maxLevel) ? `/${up.maxLevel}` : ''}
           </span>
         </div>
-        <div className="row-sub">{up.desc}</div>
+        <div className="row-sub">{loc.desc}</div>
       </div>
       {maxed ? (
-        <span className="maxed">Tamamlandı</span>
+        <span className="maxed">{t('done')}</span>
       ) : (
         <button
           type="button"
@@ -50,7 +53,7 @@ function UpgradeRow({ up, amount }) {
           disabled={!affordable}
           onClick={() => (amount === 'max' ? buyMax(up.id) : buyLevels(up.id, amount))}
         >
-          {amount === 'max' ? `Maks ×${count}` : `Al ×${count}`}
+          {amount === 'max' ? t('max_buy', { n: count }) : t('buy', { n: count })}
           <span className="buy-cost">💫 {fmt(cost)}</span>
         </button>
       )}
@@ -68,26 +71,21 @@ export default function TranscendPanel() {
   const doTranscend = useGameStore((s) => s.doTranscend);
   const [confirming, setConfirming] = useState(false);
   const [amount, setAmount] = useState(1);
+  const { t } = useT();
 
   if (!unlocked) {
     return (
       <div className="panel-content">
         <div className="prestige-locked">
           <div className="prestige-star transcend-star">✦</div>
-          <p>
-            Aşkınlık, <strong>Bölge {TRANSCEND_STAGE}</strong>'e ilk ulaştığında açılır. Kristaller
-            dahil tüm koşu ilerlemeni sıfırlar; karşılığında <strong>Yıldız Tozu 💫</strong>{' '}
-            kazanırsın — kalıcı ve çok güçlü çarpanlar. Artifact'ler ve başarımlar korunur.
-          </p>
+          <p dangerouslySetInnerHTML={{ __html: t('transcend_locked', { n: TRANSCEND_STAGE }) }} />
           <div className="progress">
             <div
               className="progress-fill transcend-fill"
               style={{ width: `${Math.min(100, (highest / TRANSCEND_STAGE) * 100)}%` }}
             />
           </div>
-          <div className="progress-label">
-            En yüksek: Bölge {highest} / {TRANSCEND_STAGE}
-          </div>
+          <div className="progress-label">{t('highest', { h: highest, n: TRANSCEND_STAGE })}</div>
         </div>
       </div>
     );
@@ -107,48 +105,43 @@ export default function TranscendPanel() {
 
   return (
     <div className="panel-content">
-      <div className="panel-note">
-        Aşkınlık: bu döngüdeki altın, kahraman, yoldaşlar, <strong>kristaller</strong> ve prestij
-        geliştirmeleri sıfırlanır. Yıldız Tozu bankandaki kristale göre kazanılır; Yıldız Tozu,
-        aşağıdaki çarpanlar ve artifact'ler kalıcıdır.
-      </div>
+      <div className="panel-note" dangerouslySetInnerHTML={{ __html: t('transcend_note') }} />
 
       <div className="prestige-box transcend-box">
         <div className="prestige-gain">
-          Bankadaki 💎 {fmt(crystals)} → <strong className="stardust-text">+{fmt(gain)} 💫</strong>
+          {t('transcend_gain', { n: fmt(crystals) })}
+          <strong className="stardust-text">+{fmt(gain)} 💫</strong>
         </div>
         {canTranscend ? (
           confirming ? (
             <div className="confirm-row">
-              <span>Kristaller dahil tüm döngü sıfırlanacak. Emin misin?</span>
+              <span>{t('transcend_confirm')}</span>
               <div className="confirm-buttons">
                 <button type="button" className="prestige-btn danger" onClick={onTranscend}>
-                  Evet, aşkınlaş ve +{fmt(gain)} 💫 al
+                  {t('transcend_yes', { n: fmt(gain) })}
                 </button>
                 <button type="button" className="ghost" onClick={() => setConfirming(false)}>
-                  Vazgeç
+                  {t('cancel')}
                 </button>
               </div>
             </div>
           ) : (
             <button type="button" className="prestige-btn transcend-btn" onClick={onTranscend}>
-              ✦ Aşkınlaş
+              {t('transcend_btn')}
             </button>
           )
         ) : (
-          <div className="prestige-hint">
-            Aşkınlaşmak için kristal biriktir (prestij yaparak). Şu an: 💎 {fmt(crystals)}
-          </div>
+          <div className="prestige-hint">{t('transcend_hint', { n: fmt(crystals) })}</div>
         )}
       </div>
 
       {startingCrystals(stardustLevels) > 0 && (
         <div className="panel-note subtle">
-          Aşkınlık sonrası 💎 {fmt(startingCrystals(stardustLevels))} kristalle başlarsın.
+          {t('starting_crystals_note', { n: fmt(startingCrystals(stardustLevels)) })}
         </div>
       )}
       {transcends > 0 && (
-        <div className="panel-note subtle">Toplam {transcends} kez aşkınlaştın.</div>
+        <div className="panel-note subtle">{t('transcend_count', { n: transcends })}</div>
       )}
 
       <AmountToggle value={amount} onChange={setAmount} />

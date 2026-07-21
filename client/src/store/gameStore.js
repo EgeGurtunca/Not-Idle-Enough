@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import {
-  PRESTIGE_STAGE, TRANSCEND_STAGE, MAX_STAGE, NPCS, PRESTIGE_UPGRADES, HERO_UPGRADES,
+  PRESTIGE_STAGE, TRANSCEND_STAGE, NPCS, PRESTIGE_UPGRADES, HERO_UPGRADES,
   STARDUST_UPGRADES, ARTIFACTS, ARTIFACT_MAX_LEVEL, SKILLS, ACHIEVEMENTS, MILESTONES,
   creatureType, bossName, rollBossModifier, npcPassiveBonus,
 } from '../game/constants.js';
@@ -14,6 +14,7 @@ import {
 } from '../game/formulas.js';
 import { sfx, setMuted } from '../game/audio.js';
 import { fmt } from '../utils/format.js';
+import { t as translate, dnd } from '../game/i18n.js';
 
 let enemySeq = 0; // doğuş animasyonu için her düşmana benzersiz kimlik
 let achTimer = 0; // başarım kontrolü zamanlayıcısı (2 sn'de bir)
@@ -122,6 +123,7 @@ export const useGameStore = create((set, get) => ({
   milestones: {}, // stage -> true (kilometre taşı ödülleri alındı mı)
   skillState: {}, // id -> { active, cd } (saniye)
   muted: false,
+  lang: 'en', // arayüz dili (varsayılan İngilizce), kayda yazılır
   buyAmount: 1, // 1 | 10 | 'max' — tüm panellerde ortak, kayda yazılır
 
   // --- geçici state ---
@@ -148,6 +150,10 @@ export const useGameStore = create((set, get) => ({
     set({ muted });
   },
 
+  setLang(lang) {
+    set({ lang });
+  },
+
   _showToast(text) {
     const id = ++toastSeq;
     set({ toast: { id, text } });
@@ -161,7 +167,7 @@ export const useGameStore = create((set, get) => ({
   clickAttack() {
     const s = get();
     if (!s.enemy || !s.loaded) return null;
-    let dmg = s.opMode ? 1e18 : clickDamage(s.heroLevel, s.prestigeLevels, s.artifacts, achCount(s), s.stardustLevels);
+    let dmg = s.opMode ? 1e300 : clickDamage(s.heroLevel, s.prestigeLevels, s.artifacts, achCount(s), s.stardustLevels);
     if (skillActive(s, 'ofke')) dmg *= 5;
     if (s.goldenBuffLeft > 0) dmg *= 7;
     // Kombo: 1.2sn içinde ardışık klik çarpanı büyütür (maks +%100)
@@ -280,7 +286,7 @@ export const useGameStore = create((set, get) => ({
       milestones: { ...s.milestones, ...claimed },
       crystals: s.crystals + crystals,
     });
-    get()._showToast(`🏁 Bölge ${last.stage}! +${fmt(crystals)} 💎`);
+    get()._showToast(translate(s.lang, 'toast_milestone', { s: last.stage, c: fmt(crystals) }));
     sfx.achievement();
   },
 
@@ -296,8 +302,9 @@ export const useGameStore = create((set, get) => ({
     if (ids.length === 0) return;
     set({ achievements: { ...s.achievements, ...unlocked } });
     const first = ACHIEVEMENTS.find((a) => a.id === ids[0]);
-    const extra = ids.length > 1 ? ` (+${ids.length - 1} daha)` : '';
-    get()._showToast(`🏆 Başarım: ${first.emoji} ${first.name}${extra}`);
+    const name = dnd(s.lang, 'ach', first.id, first.name, first.desc).name;
+    const extra = ids.length > 1 ? translate(s.lang, 'toast_ach_extra', { n: ids.length - 1 }) : '';
+    get()._showToast(translate(s.lang, 'toast_ach', { emoji: first.emoji, name, extra }));
     sfx.achievement();
   },
 
@@ -319,7 +326,7 @@ export const useGameStore = create((set, get) => ({
     if (s.opMode) gmult *= 1000;
     if (s.enemy.kind === 'boss') {
       const reward = bossGold(s.stage) * gmult * (s.enemy.goldMult ?? 1);
-      const nextStage = Math.min(s.stage + 1, MAX_STAGE);
+      const nextStage = s.stage + 1; // 500 sonrası sonsuz (float tavanına kadar)
       sfx.bossWin();
       set({
         gold: s.gold + reward,
@@ -338,12 +345,16 @@ export const useGameStore = create((set, get) => ({
       });
     } else {
       const required = killsRequired(s.prestigeLevels);
-      const kills = Math.min(s.kills + 1, required);
-      const justFilled = s.kills === required - 1; // sayacın dolduğu an
-      const reward = creatureGold(s.stage) * gmult;
+      // Overkill: canın 10 katını vurunca +1, 100 katı +2, 1000 katı +3… (logaritmik)
+      const ratio = amount / (s.enemy.maxHp || 1);
+      const extra = ratio >= 10 ? Math.floor(Math.log10(ratio)) : 0;
+      const killed = Math.min(1 + extra, required - s.kills); // boss'u geçme, sayacı doldur
+      const kills = s.kills + killed;
+      const justFilled = s.kills < required && kills >= required;
+      const reward = creatureGold(s.stage) * gmult * killed;
       const stats = {
         ...s.stats,
-        totalKills: s.stats.totalKills + 1,
+        totalKills: s.stats.totalKills + killed,
         totalGoldEarned: s.stats.totalGoldEarned + reward,
       };
       sfx.kill();
@@ -406,10 +417,10 @@ export const useGameStore = create((set, get) => ({
       // 120 sn üretim; erken oyun için tek yaratık altınının katıyla taban
       const burst = Math.max(goldPerSec * 120, creatureGold(s.stage) * gmult * 60);
       set({ gold: s.gold + burst, golden: null });
-      get()._showToast(`💰 Altın Yaratık! +${fmt(burst)} altın`);
+      get()._showToast(translate(s.lang, 'toast_golden_gold', { n: fmt(burst) }));
     } else {
       set({ goldenBuffLeft: 20, golden: null });
-      get()._showToast('✨ Altın Coşkusu! 20sn ×7 klik ve ×3 altın');
+      get()._showToast(translate(s.lang, 'toast_golden_frenzy'));
     }
   },
 
@@ -581,7 +592,7 @@ export const useGameStore = create((set, get) => ({
       stardust: s.stardust + gain,
       totalTranscends: s.totalTranscends + 1,
     });
-    get()._showToast(`✦ Aşkınlık! +${gain} 💫 Yıldız Tozu`);
+    get()._showToast(translate(get().lang, 'toast_transcend', { n: gain }));
   },
 
   buyStardustUpgradeLevels(upgradeId, count) {
@@ -671,12 +682,13 @@ export const useGameStore = create((set, get) => ({
       milestones: s.milestones,
       skillState: s.skillState,
       muted: s.muted,
+      lang: s.lang,
       buyAmount: s.buyAmount,
     };
   },
 
   loadSaveData(data, offlineReport) {
-    const stage = Math.min(MAX_STAGE, Math.max(1, data.stage ?? 1));
+    const stage = Math.max(1, data.stage ?? 1);
     setMuted(data.muted ?? false);
     set({
       gold: (data.gold ?? 0) + (offlineReport?.gold ?? 0),
@@ -700,6 +712,7 @@ export const useGameStore = create((set, get) => ({
       milestones: data.milestones ?? {},
       skillState: data.skillState ?? {},
       muted: data.muted ?? false,
+      lang: data.lang ?? 'en',
       buyAmount: data.buyAmount ?? 1,
       mode: 'farm',
       bossTimeLeft: 0,

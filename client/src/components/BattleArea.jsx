@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useGameStore, selectors } from '../store/gameStore.js';
 import { zoneName, zoneTheme, NPCS, SKILLS } from '../game/constants.js';
 import { isBossStage, bossTime, killsRequired } from '../game/formulas.js';
+import { useT, zoneNameL, bossNameL } from '../game/i18n.js';
 import { fmt } from '../utils/format.js';
 import { sfx } from '../game/audio.js';
 import CreatureCanvas from './CreatureCanvas.jsx';
@@ -10,6 +11,7 @@ function SkillBar() {
   const skillState = useGameStore((s) => s.skillState);
   const highest = useGameStore((s) => s.highestStage);
   const useSkill = useGameStore((s) => s.useSkill);
+  const { t, dnd } = useT();
 
   return (
     <div className="skill-bar">
@@ -18,6 +20,7 @@ function SkillBar() {
         const locked = highest < sk.unlockStage;
         const onCooldown = st.cd > 0 && st.active <= 0;
         const cdFrac = st.cd > 0 ? st.cd / sk.cooldown : 0;
+        const loc = dnd('skill', sk.id, sk.name, sk.desc);
         return (
           <button
             key={sk.id}
@@ -27,8 +30,8 @@ function SkillBar() {
             disabled={locked || st.cd > 0}
             title={
               locked
-                ? `${sk.name} — Bölge ${sk.unlockStage}'de açılır`
-                : `${sk.name} — ${sk.desc} (${sk.duration}sn, bekleme ${sk.cooldown}sn)`
+                ? t('skill_locked', { name: loc.name, n: sk.unlockStage })
+                : t('skill_tip', { name: loc.name, desc: loc.desc, dur: sk.duration, cd: sk.cooldown })
             }
             onClick={() => useSkill(sk.id)}
           >
@@ -45,6 +48,7 @@ function SkillBar() {
 function GoldenCreature() {
   const golden = useGameStore((s) => s.golden);
   const clickGolden = useGameStore((s) => s.clickGolden);
+  const { t } = useT();
   if (!golden) return null;
   return (
     <button
@@ -52,10 +56,24 @@ function GoldenCreature() {
       className="golden"
       style={{ left: `${golden.x}%`, top: `${golden.y}%`, '--ttl': golden.ttl / 12 }}
       onClick={clickGolden}
-      title={golden.reward === 'gold' ? 'Altın patlaması!' : 'Altın Coşkusu buff!'}
+      title={golden.reward === 'gold' ? t('golden_gold') : t('golden_frenzy')}
     >
       {golden.reward === 'gold' ? '🪙' : '✨'}
     </button>
+  );
+}
+
+function ModifierBadge({ modifier }) {
+  const { dnd } = useT();
+  const loc = dnd('mod', modifier.id, modifier.name, modifier.desc);
+  return (
+    <span
+      className="enemy-badge modifier"
+      style={{ borderColor: modifier.color, color: modifier.color }}
+      title={loc.desc}
+    >
+      {modifier.emoji} {loc.name}
+    </span>
   );
 }
 
@@ -72,6 +90,16 @@ export default function BattleArea() {
   const clickDmg = useGameStore(selectors.clickDamage);
   const dps = useGameStore(selectors.totalDps);
   const combo = useGameStore((s) => s.combo);
+  const { t, dn, lang } = useT();
+
+  // Düşman adını dile göre türet (enemy.name TR'de saklanır, fallback)
+  const enemyLabel = !enemy
+    ? ''
+    : enemy.kind !== 'boss'
+      ? dn('creature', enemy.typeId, enemy.name)
+      : enemy.big
+        ? bossNameL(lang, stage, enemy.name)
+        : `${t('elite')} ${dn('creature', enemy.typeId, enemy.name)}`;
 
   const arenaRef = useRef(null);
   const sigilRef = useRef(null);
@@ -100,7 +128,7 @@ export default function BattleArea() {
     });
     setFloaters((f) => [...f.slice(-20), ...coins]);
     if (enemy.kind === 'boss') {
-      setBossIntro({ id: enemy.id, name: enemy.name, big: enemy.big });
+      setBossIntro({ id: enemy.id, big: enemy.big });
       setTimeout(() => setBossIntro((b) => (b && b.id === enemy.id ? null : b)), 1600);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -186,13 +214,14 @@ export default function BattleArea() {
   return (
     <section className="arena" ref={arenaRef} style={{ '--zone': zoneTheme(stage) }}>
       <div className="stage-head">
-        <span className="stage-zone">{zoneName(stage)}</span>
+        <span className="stage-zone">{zoneNameL(lang, stage, zoneName(stage))}</span>
         <span className="stage-no">
-          Bölge {stage} {isBossStage(stage) && <span title="Boss bölgesi">👑</span>}
+          {t('region', { n: stage })}{' '}
+          {isBossStage(stage) && <span title={t('boss_region')}>👑</span>}
         </span>
       </div>
 
-      <div className="pips" aria-label={`Avlanan yaratık: ${kills}/${required}`}>
+      <div className="pips" aria-label={`${kills}/${required}`}>
         {Array.from({ length: required }, (_, i) => (
           <span key={i} className={`pip ${i < kills ? 'filled' : ''}`} />
         ))}
@@ -200,21 +229,15 @@ export default function BattleArea() {
 
       <div className="enemy-name-row">
         <span className={`enemy-name ${enemy.kind === 'boss' ? (enemy.big ? 'big-boss' : 'mini-boss') : ''}`}>
-          {enemy.name}
+          {enemyLabel}
         </span>
         {enemy.kind === 'boss' && (
           <span className={`enemy-badge ${enemy.big ? 'big' : 'mini'}`}>
-            {enemy.big ? 'BÜYÜK BOSS' : 'MİNİ BOSS'}
+            {enemy.big ? t('big_boss') : t('mini_boss')}
           </span>
         )}
         {enemy.modifier && (
-          <span
-            className="enemy-badge modifier"
-            style={{ borderColor: enemy.modifier.color, color: enemy.modifier.color }}
-            title={enemy.modifier.desc}
-          >
-            {enemy.modifier.emoji} {enemy.modifier.name}
-          </span>
+          <ModifierBadge modifier={enemy.modifier} />
         )}
       </div>
 
@@ -224,7 +247,7 @@ export default function BattleArea() {
         className={`sigil ${inBoss ? 'boss' : ''} ${urgent ? 'urgent' : ''}`}
         style={{ '--frac': frac }}
         onPointerDown={onHit}
-        aria-label="Saldır"
+        aria-label={t('attack')}
       >
         <CreatureCanvas enemy={enemy} hitId={hitId} stage={stage} />
       </button>
@@ -242,27 +265,25 @@ export default function BattleArea() {
       <div className="under-enemy">
         {inBoss && (
           <div className={`boss-timer ${urgent ? 'urgent' : ''}`}>
-            ⏱ {bossTimeLeft.toFixed(1)}sn — boss kaçmadan yetiş!
+            {t('boss_timer', { s: bossTimeLeft.toFixed(1) })}
           </div>
         )}
         {bossReady && (
           <button type="button" className="challenge" onClick={challengeBoss}>
-            ⚔️ Boss'a Meydan Oku
+            {t('challenge_boss')}
           </button>
         )}
         {!inBoss && !bossReady && (
-          <div className="hunt-hint">
-            Avlanan: {kills}/{required} — boss için yaratıkları kes
-          </div>
+          <div className="hunt-hint">{t('hunt_hint', { k: kills, r: required })}</div>
         )}
       </div>
 
       <div className="battle-stats">
-        <span title="Klik hasarı">👆 {fmt(clickDmg)}</span>
-        <span title="Yoldaş hasarı (saniyede)">🗡️ {fmt(dps)}/sn</span>
+        <span title={t('tip_click_dmg')}>👆 {fmt(clickDmg)}</span>
+        <span title={t('tip_dps')}>🗡️ {fmt(dps)}/{lang === 'tr' ? 'sn' : 's'}</span>
         {combo > 1 && (
-          <span className="combo" title="Hızlı klik çarpanı">
-            🔥 {combo}x kombo (×{(1 + Math.min(combo, 50) * 0.02).toFixed(2)})
+          <span className="combo" title={t('tip_combo')}>
+            {t('combo', { n: combo, m: (1 + Math.min(combo, 50) * 0.02).toFixed(2) })}
           </span>
         )}
       </div>
@@ -276,7 +297,7 @@ export default function BattleArea() {
             ref={setNpcRef(n.id)}
             className="npc-figure"
             style={{ animationDelay: `${i * 0.4}s` }}
-            title={`${n.name} — sv ${npcLevels[n.id]}`}
+            title={`${dn('npc', n.id, n.name)} — ${t('lv')} ${npcLevels[n.id]}`}
           >
             {n.emoji}
           </span>
@@ -289,7 +310,7 @@ export default function BattleArea() {
             ref={setNpcRef(n.id)}
             className="npc-figure"
             style={{ animationDelay: `${i * 0.4 + 0.2}s` }}
-            title={`${n.name} — sv ${npcLevels[n.id]}`}
+            title={`${dn('npc', n.id, n.name)} — ${t('lv')} ${npcLevels[n.id]}`}
           >
             {n.emoji}
           </span>
@@ -310,8 +331,10 @@ export default function BattleArea() {
 
       {bossIntro && (
         <div className={`boss-intro ${bossIntro.big ? 'big' : ''}`} key={bossIntro.id}>
-          <span className="boss-intro-label">{bossIntro.big ? '👑 BÜYÜK BOSS' : '⚔ BOSS'}</span>
-          <span className="boss-intro-name">{bossIntro.name}</span>
+          <span className="boss-intro-label">
+            {bossIntro.big ? `👑 ${t('big_boss')}` : `⚔ ${t('boss_short')}`}
+          </span>
+          <span className="boss-intro-name">{enemyLabel}</span>
         </div>
       )}
 

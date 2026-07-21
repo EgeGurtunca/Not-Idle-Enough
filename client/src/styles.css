@@ -16,6 +16,12 @@
   --font-display: 'Grenze Gotisch', serif;
   --font-body: 'Alegreya Sans', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
+  /* Malzeme + derinlik */
+  --card: linear-gradient(180deg, #272338, #201d2e);
+  --card-hi: inset 0 1px 0 rgba(255, 240, 214, 0.055);
+  --elev-1: 0 3px 10px -6px rgba(0, 0, 0, 0.6);
+  --elev-2: 0 12px 34px -16px rgba(0, 0, 0, 0.75);
+  --ring: rgba(240, 168, 60, 0.35);
 }
 
 * {
@@ -33,8 +39,31 @@ body {
   font-family: var(--font-body);
   color: var(--bone);
   background:
-    radial-gradient(1100px 700px at 50% -10%, #262038 0%, var(--night) 55%, var(--night-deep) 100%)
+    radial-gradient(120% 90% at 50% 108%, rgba(10, 8, 16, 0.7), transparent 60%),
+    radial-gradient(1100px 700px at 50% -10%, #2a2340 0%, var(--night) 55%, var(--night-deep) 100%)
     fixed;
+}
+
+/* İmza: tepeden sızan meşale ışığı, yavaşça titrer */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(60% 42% at 50% -6%, rgba(240, 168, 60, 0.14), transparent 68%);
+  animation: torch 7s ease-in-out infinite;
+}
+
+@keyframes torch {
+  0%, 100% { opacity: 0.75; }
+  40% { opacity: 1; }
+  70% { opacity: 0.62; }
+}
+
+.app {
+  position: relative;
+  z-index: 1;
 }
 
 button {
@@ -90,17 +119,26 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: 20px;
-  padding: 10px 20px;
+  padding: 11px 20px;
   border-bottom: 1px solid var(--line);
-  background: rgba(18, 15, 28, 0.5);
+  background: linear-gradient(180deg, rgba(30, 25, 44, 0.72), rgba(18, 15, 28, 0.6));
+  backdrop-filter: blur(8px);
+  box-shadow: 0 6px 20px -14px #000;
+  position: relative;
+  z-index: 2;
 }
 
 .logo {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 26px;
-  font-weight: 600;
+  font-size: 27px;
+  font-weight: 700;
   letter-spacing: 0.5px;
+  background: linear-gradient(180deg, var(--bone), #b8a988);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 2px 10px rgba(240, 168, 60, 0.12);
 }
 
 .chips {
@@ -113,25 +151,30 @@ button:disabled {
   font-family: var(--font-mono);
   font-size: 14px;
   font-weight: 600;
-  padding: 5px 12px;
+  font-variant-numeric: tabular-nums;
+  padding: 5px 13px;
   border-radius: 999px;
-  background: var(--stone);
+  background: linear-gradient(180deg, rgba(60, 54, 82, 0.55), rgba(34, 31, 48, 0.85));
   border: 1px solid var(--line);
+  box-shadow: var(--card-hi);
 }
 
 .chip-gold {
   color: var(--ember);
-  box-shadow: 0 0 14px -6px var(--ember);
+  border-color: rgba(240, 168, 60, 0.28);
+  box-shadow: var(--card-hi), 0 0 16px -7px var(--ember);
 }
 
 .chip-crystal {
   color: var(--arcane);
-  box-shadow: 0 0 14px -6px var(--arcane);
+  border-color: rgba(157, 123, 232, 0.28);
+  box-shadow: var(--card-hi), 0 0 16px -7px var(--arcane);
 }
 
 .chip-stardust {
   color: #ffd86b;
-  box-shadow: 0 0 14px -5px #ffd86b;
+  border-color: rgba(255, 216, 107, 0.28);
+  box-shadow: var(--card-hi), 0 0 16px -6px #ffd86b;
 }
 
 .op-btn {
@@ -285,7 +328,7 @@ button:disabled {
 /* İmza öğesi: rünik sigil halkası — boss savaşında geri sayım olarak erir */
 .sigil {
   position: relative;
-  width: min(300px, 56vw);
+  width: min(400px, 58vw, 49vh);
   aspect-ratio: 1;
   display: grid;
   place-items: center;
@@ -305,6 +348,12 @@ button:disabled {
   background: conic-gradient(var(--ring-color) calc(var(--frac, 1) * 360deg), rgba(232, 224, 206, 0.07) 0);
   -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 9px), #000 calc(100% - 8px));
   mask: radial-gradient(closest-side, transparent calc(100% - 9px), #000 calc(100% - 8px));
+  filter: drop-shadow(0 0 12px var(--ring-color));
+}
+
+/* halka içi yumuşak köz zemini — yaratığı çerçeveler */
+.sigil {
+  background: radial-gradient(closest-side, rgba(240, 168, 60, 0.06), transparent 78%);
 }
 
 .sigil::after {
@@ -654,16 +703,18 @@ button:disabled {
 .hpbar {
   position: relative;
   width: min(380px, 84%);
-  height: 17px;
+  height: 18px;
   border-radius: 9px;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.6);
   border: 1px solid var(--line);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.55);
   overflow: hidden;
 }
 
 .hpfill {
   height: 100%;
-  background: linear-gradient(180deg, var(--blood), var(--blood-deep));
+  background: linear-gradient(180deg, #ff7062, var(--blood) 55%, var(--blood-deep));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
   transition: width 0.1s linear;
 }
 
@@ -851,12 +902,14 @@ button:disabled {
   flex-direction: column;
   min-height: 0;
   border-left: 1px solid var(--line);
-  background: rgba(18, 15, 28, 0.35);
+  background: linear-gradient(180deg, rgba(26, 22, 38, 0.5), rgba(18, 15, 28, 0.35));
+  box-shadow: inset 1px 0 0 rgba(255, 240, 214, 0.03);
 }
 
 .tabs {
   display: flex;
   border-bottom: 1px solid var(--line);
+  background: rgba(14, 11, 22, 0.35);
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -877,11 +930,18 @@ button:disabled {
   letter-spacing: 0.5px;
   color: var(--bone-dim);
   white-space: nowrap;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.tab:hover {
+  color: var(--bone);
 }
 
 .tab.active {
-  color: var(--bone);
+  color: var(--ember);
   border-bottom-color: var(--ember);
+  background: linear-gradient(180deg, transparent, rgba(240, 168, 60, 0.09));
+  text-shadow: 0 0 14px rgba(240, 168, 60, 0.35);
 }
 
 .tab-dot {
@@ -903,6 +963,22 @@ button:disabled {
   scrollbar-color: var(--stone-2) transparent;
 }
 
+.tab-body::-webkit-scrollbar {
+  width: 9px;
+}
+
+.tab-body::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--stone-2), var(--stone));
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.tab-body::-webkit-scrollbar-thumb:hover {
+  background: var(--ember-deep);
+  background-clip: padding-box;
+}
+
 .panel-content {
   display: flex;
   flex-direction: column;
@@ -922,13 +998,40 @@ button:disabled {
 
 /* ---- Satırlar ---- */
 .row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 11px 13px;
-  border-radius: 11px;
-  background: var(--stone);
+  border-radius: 12px;
+  background: var(--card);
   border: 1px solid var(--line);
+  box-shadow: var(--card-hi), var(--elev-1);
+  transition: transform 0.12s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+/* sol köz vurgu şeridi — hover'da belirir */
+.row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--ember);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.row:hover {
+  transform: translateY(-1px);
+  border-color: rgba(240, 168, 60, 0.22);
+  box-shadow: var(--card-hi), var(--elev-2);
+}
+
+.row:hover::before {
+  opacity: 0.8;
 }
 
 .row.locked {
@@ -997,22 +1100,31 @@ button:disabled {
   padding: 8px 12px;
   border-radius: 10px;
   border: 1px solid var(--ember-deep);
-  background: linear-gradient(180deg, var(--ember), var(--ember-deep));
+  background: linear-gradient(180deg, #ffc25e, var(--ember) 45%, var(--ember-deep));
   color: #241a08;
   font-weight: 800;
   font-size: 14px;
-  transition: transform 0.08s, filter 0.12s;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32), 0 4px 12px -6px rgba(240, 168, 60, 0.55);
+  transition: transform 0.08s ease, filter 0.12s ease, box-shadow 0.12s ease;
 }
 
 .buy:hover:not(:disabled) {
   transform: translateY(-1px);
-  filter: brightness(1.07);
+  filter: brightness(1.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.36), 0 7px 18px -7px rgba(240, 168, 60, 0.6);
+}
+
+.buy:active:not(:disabled) {
+  transform: translateY(1px);
+  filter: brightness(0.97);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.28);
 }
 
 .buy:disabled {
   background: var(--stone-2);
   border-color: var(--line);
   color: var(--bone-dim);
+  box-shadow: none;
 }
 
 .buy-cost {
@@ -1023,8 +1135,9 @@ button:disabled {
 
 .buy.crystal {
   border-color: #6e4fc0;
-  background: linear-gradient(180deg, var(--arcane), #7554c4);
+  background: linear-gradient(180deg, #b79cf2, var(--arcane) 45%, #7554c4);
   color: #17102b;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 12px -6px rgba(157, 123, 232, 0.55);
 }
 
 .buy.crystal:disabled {
@@ -1035,8 +1148,9 @@ button:disabled {
 
 .buy.stardust {
   border-color: #c79a3a;
-  background: linear-gradient(180deg, #ffd86b, #e0a93c);
+  background: linear-gradient(180deg, #ffe6a0, #ffd86b 45%, #e0a93c);
   color: #2a1e05;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 4px 12px -6px rgba(255, 216, 107, 0.6);
 }
 
 .buy.stardust:disabled {
@@ -1082,9 +1196,20 @@ button:disabled {
   padding: 8px 14px;
   border-radius: 10px;
   border: 1px solid var(--line);
-  background: none;
+  background: rgba(60, 54, 82, 0.25);
   color: var(--bone-dim);
   font-weight: 700;
+  transition: transform 0.08s ease, border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.ghost:hover {
+  border-color: rgba(240, 168, 60, 0.4);
+  color: var(--bone);
+  background: rgba(60, 54, 82, 0.45);
+}
+
+.ghost:active {
+  transform: translateY(1px);
 }
 
 /* ---- Prestij ---- */
@@ -1601,6 +1726,7 @@ button:disabled {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  body::before,
   .sigil::after,
   .sigil.urgent::before,
   .enemy-float,

@@ -1,6 +1,7 @@
 import { useGameStore, selectors } from '../store/gameStore.js';
 import { MILESTONE_EVERY, HERO_UPGRADES } from '../game/constants.js';
 import { heroLevelCost, heroUpgradeCost, bulkCost, maxAffordable } from '../game/formulas.js';
+import { useT } from '../game/i18n.js';
 import { fmt } from '../utils/format.js';
 import AmountToggle from './AmountToggle.jsx';
 
@@ -9,10 +10,12 @@ function UpgradeRow({ up, amount }) {
   const level = useGameStore((s) => s.heroUpgrades[up.id] ?? 0);
   const buyLevels = useGameStore((s) => s.buyHeroUpgradeLevels);
   const buyMax = useGameStore((s) => s.buyHeroUpgradeMax);
+  const { t, dnd } = useT();
 
   const maxed = level >= up.maxLevel;
   const remaining = up.maxLevel - level;
   const costFn = (l) => heroUpgradeCost(up, l);
+  const loc = dnd('heroUp', up.id, up.name, up.desc);
 
   let count = 0;
   let cost = 0;
@@ -31,16 +34,16 @@ function UpgradeRow({ up, amount }) {
       <span className="row-emoji">{up.emoji}</span>
       <div className="row-info">
         <div className="row-name">
-          {up.name}{' '}
+          {loc.name}{' '}
           <span className="row-level">
-            sv {level}
+            {t('lv')} {level}
             {Number.isFinite(up.maxLevel) ? `/${up.maxLevel}` : ''}
           </span>
         </div>
-        <div className="row-sub">{up.desc}</div>
+        <div className="row-sub">{loc.desc}</div>
       </div>
       {maxed ? (
-        <span className="maxed">Tamamlandı</span>
+        <span className="maxed">{t('done')}</span>
       ) : (
         <button
           type="button"
@@ -48,7 +51,7 @@ function UpgradeRow({ up, amount }) {
           disabled={!affordable}
           onClick={() => (amount === 'max' ? buyMax(up.id) : buyLevels(up.id, amount))}
         >
-          {amount === 'max' ? `Maks ×${count}` : `Al ×${count}`}
+          {amount === 'max' ? t('max_buy', { n: count }) : t('buy', { n: count })}
           <span className="buy-cost">🪙 {fmt(cost)}</span>
         </button>
       )}
@@ -66,6 +69,7 @@ export default function HeroPanel() {
   const buyHeroMax = useGameStore((s) => s.buyHeroMax);
   const amount = useGameStore((s) => s.buyAmount);
   const setAmount = useGameStore((s) => s.setBuyAmount);
+  const { t } = useT();
 
   const nextMilestone = (Math.floor(heroLevel / MILESTONE_EVERY) + 1) * MILESTONE_EVERY;
 
@@ -80,24 +84,21 @@ export default function HeroPanel() {
 
   return (
     <div className="panel-content">
-      <div className="panel-note">
-        Kahraman yalnızca sen tıklayınca vurur. Seviye aldıkça klik hasarı artar; her{' '}
-        {MILESTONE_EVERY}. seviyede hasar ikiye katlanır.
-      </div>
+      <div className="panel-note">{t('hero_note', { n: MILESTONE_EVERY })}</div>
 
       <AmountToggle value={amount} onChange={setAmount} />
 
       <div className="row hero-row">
         <span className="row-emoji">🦸</span>
         <div className="row-info">
-          <div className="row-name">Kahraman</div>
+          <div className="row-name">{t('hero')}</div>
           <div className="row-sub">
-            Seviye {heroLevel} · 👆 {fmt(clickDmg)} hasar
+            {t('level')} {heroLevel} · 👆 {fmt(clickDmg)} {t('dmg_short')}
           </div>
           <div className="row-sub">
-            🎯 %{(critCh * 100).toFixed(0)} kritik · 💢 ×{critMult.toFixed(1)} kritik hasarı
+            {t('crit_line', { c: (critCh * 100).toFixed(0), m: critMult.toFixed(1) })}
           </div>
-          <div className="row-milestone">Seviye {nextMilestone}'te hasar ×2</div>
+          <div className="row-milestone">{t('milestone_note', { n: nextMilestone })}</div>
         </div>
         <button
           type="button"
@@ -105,14 +106,12 @@ export default function HeroPanel() {
           disabled={!affordable}
           onClick={() => (amount === 'max' ? buyHeroMax() : buyHeroLevels(amount))}
         >
-          {amount === 'max' ? `Maks ×${count}` : `Al ×${count}`}
+          {amount === 'max' ? t('max_buy', { n: count }) : t('buy', { n: count })}
           <span className="buy-cost">🪙 {fmt(cost)}</span>
         </button>
       </div>
 
-      <div className="panel-note subtle">
-        Eğitimler bu maceraya özeldir; prestijde sıfırlanır.
-      </div>
+      <div className="panel-note subtle">{t('hero_up_note')}</div>
 
       {HERO_UPGRADES.map((up) => (
         <UpgradeRow key={up.id} up={up} amount={amount} />

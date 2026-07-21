@@ -3,6 +3,7 @@ import { useGameStore, selectors } from '../store/gameStore.js';
 import { PRESTIGE_STAGE, PRESTIGE_UPGRADES } from '../game/constants.js';
 import { prestigeUpgradeCost, startingGold, bulkCost, maxAffordable } from '../game/formulas.js';
 import { saveGame } from '../game/save.js';
+import { useT } from '../game/i18n.js';
 import { fmt } from '../utils/format.js';
 import AmountToggle from './AmountToggle.jsx';
 
@@ -11,10 +12,12 @@ function UpgradeRow({ up, amount }) {
   const level = useGameStore((s) => s.prestigeLevels[up.id] ?? 0);
   const buyLevels = useGameStore((s) => s.buyPrestigeUpgradeLevels);
   const buyMax = useGameStore((s) => s.buyPrestigeUpgradeMax);
+  const { t, dnd } = useT();
 
   const maxed = level >= up.maxLevel;
   const remaining = up.maxLevel - level;
   const costFn = (l) => prestigeUpgradeCost(up, l);
+  const loc = dnd('presUp', up.id, up.name, up.desc);
 
   let count = 0;
   let cost = 0;
@@ -33,16 +36,16 @@ function UpgradeRow({ up, amount }) {
       <span className="row-emoji">{up.emoji}</span>
       <div className="row-info">
         <div className="row-name">
-          {up.name}{' '}
+          {loc.name}{' '}
           <span className="row-level">
-            sv {level}
+            {t('lv')} {level}
             {Number.isFinite(up.maxLevel) ? `/${up.maxLevel}` : ''}
           </span>
         </div>
-        <div className="row-sub">{up.desc}</div>
+        <div className="row-sub">{loc.desc}</div>
       </div>
       {maxed ? (
-        <span className="maxed">Tamamlandı</span>
+        <span className="maxed">{t('done')}</span>
       ) : (
         <button
           type="button"
@@ -50,7 +53,7 @@ function UpgradeRow({ up, amount }) {
           disabled={!affordable}
           onClick={() => (amount === 'max' ? buyMax(up.id) : buyLevels(up.id, amount))}
         >
-          {amount === 'max' ? `Maks ×${count}` : `Al ×${count}`}
+          {amount === 'max' ? t('max_buy', { n: count }) : t('buy', { n: count })}
           <span className="buy-cost">💎 {fmt(cost)}</span>
         </button>
       )}
@@ -68,26 +71,21 @@ export default function PrestigePanel() {
   const [confirming, setConfirming] = useState(false);
   const amount = useGameStore((s) => s.buyAmount);
   const setAmount = useGameStore((s) => s.setBuyAmount);
+  const { t } = useT();
 
   if (highest < PRESTIGE_STAGE) {
     return (
       <div className="panel-content">
         <div className="prestige-locked">
           <div className="prestige-star">✦</div>
-          <p>
-            Prestij, <strong>Bölge {PRESTIGE_STAGE}</strong>'e ilk ulaştığında açılır. İlerlemeni
-            sıfırlayıp karşılığında <strong>kristal 💎</strong> kazanırsın — kristaller kalıcı
-            güç satın alır.
-          </p>
+          <p dangerouslySetInnerHTML={{ __html: t('prestige_locked', { n: PRESTIGE_STAGE }) }} />
           <div className="progress">
             <div
               className="progress-fill"
               style={{ width: `${Math.min(100, (highest / PRESTIGE_STAGE) * 100)}%` }}
             />
           </div>
-          <div className="progress-label">
-            En yüksek: Bölge {highest} / {PRESTIGE_STAGE}
-          </div>
+          <div className="progress-label">{t('highest', { h: highest, n: PRESTIGE_STAGE })}</div>
         </div>
       </div>
     );
@@ -105,45 +103,41 @@ export default function PrestigePanel() {
 
   return (
     <div className="panel-content">
-      <div className="panel-note">
-        Prestij: bu maceradaki altın, kahraman, eğitimler ve yoldaşlar sıfırlanır; ulaştığın
-        bölgeye göre kristal kazanırsın. Kristaller, buradaki geliştirmeler ve artifact'ler
-        kalıcıdır.
-      </div>
+      <div className="panel-note">{t('prestige_note')}</div>
 
       <div className="prestige-box">
         <div className="prestige-gain">
-          Bu macera: Bölge {runHighest} → <strong>+{fmt(gain)} 💎</strong>
+          {t('prestige_gain', { n: runHighest })}
+          <strong>+{fmt(gain)} 💎</strong>
         </div>
         {canPrestige ? (
           confirming ? (
             <div className="confirm-row">
-              <span>Tüm ilerleme sıfırlanacak. Emin misin?</span>
+              <span>{t('reset_confirm')}</span>
               <div className="confirm-buttons">
                 <button type="button" className="prestige-btn danger" onClick={onPrestige}>
-                  Evet, sıfırla ve +{fmt(gain)} 💎 al
+                  {t('prestige_yes', { n: fmt(gain) })}
                 </button>
                 <button type="button" className="ghost" onClick={() => setConfirming(false)}>
-                  Vazgeç
+                  {t('cancel')}
                 </button>
               </div>
             </div>
           ) : (
             <button type="button" className="prestige-btn" onClick={onPrestige}>
-              ✦ Prestij Yap
+              {t('prestige_btn')}
             </button>
           )
         ) : (
           <div className="prestige-hint">
-            Tekrar prestij için bu macerada Bölge {PRESTIGE_STAGE}'e ulaş ({runHighest}/
-            {PRESTIGE_STAGE})
+            {t('prestige_again_hint', { n: PRESTIGE_STAGE, r: runHighest })}
           </div>
         )}
       </div>
 
       {startingGold(prestigeLevels) > 0 && (
         <div className="panel-note subtle">
-          Yeni maceralar 🪙 {fmt(startingGold(prestigeLevels))} ile başlar.
+          {t('starting_gold_note', { n: fmt(startingGold(prestigeLevels)) })}
         </div>
       )}
 

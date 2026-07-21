@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../store/gameStore.js';
 import { saveGame } from '../game/save.js';
+import { useT } from '../game/i18n.js';
 import { fmt } from '../utils/format.js';
 
-// İçe aktarılan JSON'un gerçekten bir kayıt olduğuna dair asgari kontrol
+// Minimal check that an imported JSON is actually a save
 function isValidSave(data) {
   return (
     data &&
@@ -17,8 +18,11 @@ function isValidSave(data) {
 export default function SettingsPanel() {
   const muted = useGameStore((s) => s.muted);
   const toggleMuted = useGameStore((s) => s.toggleMuted);
+  const lang = useGameStore((s) => s.lang);
+  const setLang = useGameStore((s) => s.setLang);
+  const { t } = useT();
   const [backups, setBackups] = useState(null);
-  const [confirmRestore, setConfirmRestore] = useState(null); // backup id
+  const [confirmRestore, setConfirmRestore] = useState(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const [message, setMessage] = useState('');
   const fileRef = useRef(null);
@@ -42,10 +46,10 @@ export default function SettingsPanel() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `solo-fan-idle-kayit-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `solo-fan-idle-save-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    setMessage('Kayıt indirildi.');
+    setMessage(t('msg_downloaded'));
   }
 
   async function importSave(e) {
@@ -54,12 +58,12 @@ export default function SettingsPanel() {
     if (!file) return;
     try {
       const data = JSON.parse(await file.text());
-      if (!isValidSave(data)) throw new Error('geçersiz');
+      if (!isValidSave(data)) throw new Error('invalid');
       useGameStore.getState().loadSaveData(data, null);
       await saveGame();
-      setMessage('Kayıt içe aktarıldı ve sunucuya yazıldı.');
+      setMessage(t('msg_imported'));
     } catch {
-      setMessage('Dosya okunamadı: geçerli bir kayıt JSON\'u değil.');
+      setMessage(t('msg_import_fail'));
     }
   }
 
@@ -70,9 +74,9 @@ export default function SettingsPanel() {
       if (!body.ok) throw new Error();
       useGameStore.getState().loadSaveData(body.data, null);
       setConfirmRestore(null);
-      setMessage('Yedek geri yüklendi.');
+      setMessage(t('msg_restored'));
     } catch {
-      setMessage('Yedek geri yüklenemedi.');
+      setMessage(t('msg_restore_fail'));
     }
   }
 
@@ -81,39 +85,63 @@ export default function SettingsPanel() {
       gold: 0, crystals: 0, stage: 1, highestStage: 1, runHighestStage: 1, kills: 0,
       heroLevel: 0, heroUpgrades: {}, npcLevels: {}, prestigeLevels: {}, artifacts: {},
       totalPulls: 0, totalPrestiges: 0, stats: {}, achievements: {}, skillState: {},
-      muted: useGameStore.getState().muted, buyAmount: 1,
+      muted: useGameStore.getState().muted, lang: useGameStore.getState().lang, buyAmount: 1,
     };
     useGameStore.getState().loadSaveData(fresh, null);
     await saveGame();
     setConfirmReset(false);
-    setMessage('Oyun sıfırlandı. (Gerekirse yukarıdaki yedeklerden geri dönebilirsin.)');
+    setMessage(t('msg_reset'));
   }
 
   return (
     <div className="panel-content">
       <div className="row">
+        <span className="row-emoji">🌐</span>
+        <div className="row-info">
+          <div className="row-name">{t('set_lang')}</div>
+          <div className="row-sub">{t('set_lang_sub')}</div>
+        </div>
+        <div className="amount-toggle">
+          <button
+            type="button"
+            className={`amount-btn ${lang === 'en' ? 'active' : ''}`}
+            onClick={() => setLang('en')}
+          >
+            EN
+          </button>
+          <button
+            type="button"
+            className={`amount-btn ${lang === 'tr' ? 'active' : ''}`}
+            onClick={() => setLang('tr')}
+          >
+            TR
+          </button>
+        </div>
+      </div>
+
+      <div className="row">
         <span className="row-emoji">{muted ? '🔇' : '🔊'}</span>
         <div className="row-info">
-          <div className="row-name">Ses Efektleri</div>
-          <div className="row-sub">Vuruş, kritik, boss ve sandık sesleri</div>
+          <div className="row-name">{t('set_sound')}</div>
+          <div className="row-sub">{t('set_sound_sub')}</div>
         </div>
         <button type="button" className="ghost" onClick={toggleMuted}>
-          {muted ? 'Aç' : 'Kapat'}
+          {muted ? t('on') : t('off')}
         </button>
       </div>
 
       <div className="row">
         <span className="row-emoji">📤</span>
         <div className="row-info">
-          <div className="row-name">Kaydı Dışa / İçe Aktar</div>
-          <div className="row-sub">JSON dosyası olarak indir veya geri yükle</div>
+          <div className="row-name">{t('set_io')}</div>
+          <div className="row-sub">{t('set_io_sub')}</div>
         </div>
         <div className="confirm-buttons">
           <button type="button" className="ghost" onClick={exportSave}>
-            İndir
+            {t('download')}
           </button>
           <button type="button" className="ghost" onClick={() => fileRef.current?.click()}>
-            Yükle
+            {t('upload')}
           </button>
           <input
             ref={fileRef}
@@ -128,21 +156,21 @@ export default function SettingsPanel() {
       <div className="row danger-row">
         <span className="row-emoji">🧨</span>
         <div className="row-info">
-          <div className="row-name">Oyunu Sıfırla</div>
-          <div className="row-sub">Her şey silinir — yedekler durur, geri dönülebilir</div>
+          <div className="row-name">{t('set_reset')}</div>
+          <div className="row-sub">{t('set_reset_sub')}</div>
         </div>
         {confirmReset ? (
           <div className="confirm-buttons">
             <button type="button" className="prestige-btn danger" onClick={resetSave}>
-              Evet, sıfırla
+              {t('reset_yes')}
             </button>
             <button type="button" className="ghost" onClick={() => setConfirmReset(false)}>
-              Vazgeç
+              {t('cancel')}
             </button>
           </div>
         ) : (
           <button type="button" className="ghost" onClick={() => setConfirmReset(true)}>
-            Sıfırla
+            {t('reset')}
           </button>
         )}
       </div>
@@ -150,48 +178,41 @@ export default function SettingsPanel() {
       {message && <div className="panel-note subtle">{message}</div>}
 
       <div className="collection-head">
-        Otomatik yedekler (saatlik, son 48) ·{' '}
+        {t('backups_head')}
         <button type="button" className="link-btn" onClick={loadBackups}>
-          yenile
+          {t('refresh')}
         </button>
       </div>
 
-      {backups === null && <div className="panel-note subtle">Yükleniyor…</div>}
-      {backups?.length === 0 && (
-        <div className="panel-note subtle">
-          Henüz yedek yok — oyun kaydettikçe saatte bir otomatik alınır.
-        </div>
-      )}
+      {backups === null && <div className="panel-note subtle">{t('backups_loading')}</div>}
+      {backups?.length === 0 && <div className="panel-note subtle">{t('backups_none')}</div>}
       {backups?.map((b) => (
         <div className="row" key={b.id}>
           <span className="row-emoji">🗄️</span>
           <div className="row-info">
             <div className="row-name">
-              {new Date(b.created_at).toLocaleString('tr-TR', {
+              {new Date(b.created_at).toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-GB', {
                 day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
               })}
             </div>
             <div className="row-sub">
-              Bölge {b.stage} · rekor {b.highest} · 🪙 {fmt(Number(b.gold))} · 💎{' '}
-              {fmt(Number(b.crystals))}
+              {t('backup_row', {
+                s: b.stage, h: b.highest, g: fmt(Number(b.gold)), c: fmt(Number(b.crystals)),
+              })}
             </div>
           </div>
           {confirmRestore === b.id ? (
             <div className="confirm-buttons">
-              <button
-                type="button"
-                className="prestige-btn danger"
-                onClick={() => restoreBackup(b.id)}
-              >
-                Evet
+              <button type="button" className="prestige-btn danger" onClick={() => restoreBackup(b.id)}>
+                {t('yes')}
               </button>
               <button type="button" className="ghost" onClick={() => setConfirmRestore(null)}>
-                Vazgeç
+                {t('cancel')}
               </button>
             </div>
           ) : (
             <button type="button" className="ghost" onClick={() => setConfirmRestore(b.id)}>
-              Geri Yükle
+              {t('restore')}
             </button>
           )}
         </div>

@@ -14,12 +14,13 @@ export function fmt(n) {
   return scaled.toFixed(digits) + SUFFIXES[tier];
 }
 
-export function fmtTime(totalSeconds) {
+export function fmtTime(totalSeconds, lang = 'en') {
   const s = Math.floor(totalSeconds);
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
   const sec = s % 60;
-  if (h > 0) return `${h}sa ${m}dk`;
-  if (m > 0) return `${m}dk ${sec}sn`;
-  return `${sec}sn`;
+  const u = lang === 'tr' ? { h: 'sa', m: 'dk', s: 'sn' } : { h: 'h', m: 'm', s: 's' };
+  if (h > 0) return `${h}${u.h} ${m}${u.m}`;
+  if (m > 0) return `${m}${u.m} ${sec}${u.s}`;
+  return `${sec}${u.s}`;
 }
