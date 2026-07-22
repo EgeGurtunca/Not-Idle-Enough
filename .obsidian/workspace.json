@@ -4,21 +4,20 @@
     "type": "split",
     "children": [
       {
-        "id": "1ab9612b201d3b67",
+        "id": "362e750613d4d546",
         "type": "tabs",
         "children": [
           {
-            "id": "01d191c1887f787e",
+            "id": "1aa476b1e4df744f",
             "type": "leaf",
             "state": {
-              "type": "markdown",
+              "type": "bases",
               "state": {
-                "file": "roadmap/03-altin-yaratiklar.md",
-                "mode": "source",
-                "source": false
+                "file": "Roadmap.base",
+                "viewName": "Faza göre"
               },
-              "icon": "lucide-file",
-              "title": "03-altin-yaratiklar"
+              "icon": "lucide-table",
+              "title": "Roadmap"
             }
           }
         ]
@@ -183,15 +182,16 @@
       "bases:Yeni taban oluştur": false
     }
   },
-  "active": "01d191c1887f787e",
+  "active": "1aa476b1e4df744f",
   "lastOpenFiles": [
+    "Roadmap.base",
+    "ROADMAP.md",
+    "roadmap/03-altin-yaratiklar.md",
     "roadmap/02-boss-modifiyeleri.md",
     "roadmap/01-askinlik.md",
     "client/src/styles.css.tmp.41488.943f8ec8b22f",
     "client/src/store/gameStore.js.tmp.41488.010bdb2f9b8b",
-    "ROADMAP.md",
     "roadmap/04-kilometre-tasi-odulleri.md",
-    "roadmap/03-altin-yaratiklar.md",
     "roadmap/08-npc-pasifleri.md",
     "client/src/store/gameStore.js.tmp.41488.efea685e5cd4",
     "Başlıksız.canvas",

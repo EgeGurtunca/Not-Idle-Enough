@@ -2,23 +2,18 @@ filters:
   and:
     - file.hasTag("roadmap")
     - file.inFolder("roadmap")
-
 formulas:
-  ikon: 'if(durum == "tamam", "✅", if(durum == "yapılıyor", "🔨", "⏳"))'
-
+  ikon: if(durum == "tamam", "✅", if(durum == "yapılıyor", "🔨", "⏳"))
 properties:
-  formula.ikon:
-    displayName: ""
   durum:
-    displayName: "Durum"
+    displayName: Durum
   faz:
-    displayName: "Faz"
+    displayName: Faz
   sira:
     displayName: "#"
-
 views:
   - type: table
-    name: "Faza göre"
+    name: Faza göre
     groupBy:
       property: faz
       direction: ASC
@@ -29,12 +24,11 @@ views:
       - durum
     summaries:
       durum: Filled
-
   - type: table
-    name: "Aktif işler"
+    name: Aktif işler
     filters:
       and:
-        - 'durum == "yapılıyor"'
+        - durum == "yapılıyor"
     order:
       - sira
       - file.name

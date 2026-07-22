@@ -6,6 +6,7 @@ import { useT, zoneNameL, bossNameL } from '../game/i18n.js';
 import { fmt } from '../utils/format.js';
 import { sfx } from '../game/audio.js';
 import CreatureCanvas from './CreatureCanvas.jsx';
+import ZoneScene from './ZoneScene.jsx';
 
 function SkillBar() {
   const skillState = useGameStore((s) => s.skillState);
@@ -213,6 +214,7 @@ export default function BattleArea() {
 
   return (
     <section className="arena" ref={arenaRef} style={{ '--zone': zoneTheme(stage) }}>
+      <ZoneScene stage={stage} />
       <div className="stage-head">
         <span className="stage-zone">{zoneNameL(lang, stage, zoneName(stage))}</span>
         <span className="stage-no">

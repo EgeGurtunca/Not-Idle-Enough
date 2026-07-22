@@ -223,6 +223,29 @@ button:disabled {
   gap: 14px;
   padding: 20px;
   overflow: hidden;
+  isolation: isolate; /* z-index:-1 sahne katmanı arena içinde kalsın */
+}
+
+/* Bölgeye göre arka plan manzarası — yaratığın ve içeriğin arkasında */
+.zone-scene {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.92;
+  animation: zonefade 0.7s ease;
+}
+
+.zone-scene svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+@keyframes zonefade {
+  from {
+    opacity: 0;
+  }
 }
 
 .arena::before {
