@@ -1,6 +1,6 @@
 import { useGameStore } from '../store/gameStore.js';
-import { NPCS, MILESTONE_EVERY, NPC_PASSIVES, NPC_PASSIVE_THRESHOLD } from '../game/constants.js';
-import { npcDps, npcLevelCost, bulkCost, maxAffordable } from '../game/formulas.js';
+import { NPCS, NPC_PASSIVES, NPC_PASSIVE_THRESHOLD } from '../game/constants.js';
+import { npcDps, npcLevelCost, bulkCost, maxAffordable, milestoneEvery } from '../game/formulas.js';
 import { useT } from '../game/i18n.js';
 import { fmt } from '../utils/format.js';
 import AmountToggle from './AmountToggle.jsx';
@@ -26,7 +26,8 @@ function NpcRow({ npc, amount }) {
     cost = bulkCost(costFn, level, amount);
   }
   const affordable = amount === 'max' ? count > 0 : gold >= cost;
-  const nextMilestone = (Math.floor(level / MILESTONE_EVERY) + 1) * MILESTONE_EVERY;
+  const mEvery = milestoneEvery(useGameStore((s) => s.stardustLevels));
+  const nextMilestone = (Math.floor(level / mEvery) + 1) * mEvery;
 
   return (
     <div className={`row ${unlocked ? '' : 'locked'}`}>

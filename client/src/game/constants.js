@@ -4,6 +4,7 @@ export const KILLS_PER_STAGE = 10; // boss gelmeden önce kesilecek yaratık say
 export const BOSS_TIME_BASE = 30; // saniye
 export const PRESTIGE_STAGE = 100; // prestijin açıldığı stage
 export const TRANSCEND_STAGE = 500; // aşkınlığın açıldığı stage (= son bölge)
+export const REALM_STAGE = 1000; // Diyar Geçişi'nin (3. prestij katmanı) açıldığı stage
 export const MAX_STAGE = 500; // (artık sert sınır değil — stage sonsuz; 500 = aşkınlık eşiği)
 export const OFFLINE_CAP_HOURS = 10;
 export const AUTOSAVE_MS = 20000;
@@ -242,6 +243,38 @@ export const STARDUST_UPGRADES = [
     desc: 'Takılınca (30sn ilerleme yoksa) otomatik prestij yapar',
     baseCost: 60, costGrowth: 1, maxLevel: 1,
   },
+  {
+    // Duvar kıran: kilometre taşı aralığını 15→12'ye indirir; ln(1.056)·12 < ln(2)
+    // olduğundan DPS büyümesi HP'yi geçer ve Bölge 1000 (Diyar) ulaşılabilir olur.
+    id: 'yildizYarigi', name: 'Yıldız Yarığı', emoji: '🌠',
+    desc: 'Kilometre taşı aralığı −1 (hasar ×2 daha sık gelir)',
+    baseCost: 1500, costGrowth: 6, maxLevel: 3,
+  },
+];
+
+// ---- Diyar (Öz 🌀) geliştirmeleri ----
+// Öz ile alınır; en üst katman olduğundan HİÇBİR sıfırlamada kaybolmaz.
+export const ESSENCE_UPGRADES = [
+  {
+    id: 'ozGucu', name: 'Öz Gücü', emoji: '💥',
+    desc: 'Tüm hasar (klik + NPC) +%60 (seviye başına)',
+    baseCost: 2, costGrowth: 1.9, maxLevel: Infinity,
+  },
+  {
+    id: 'ozBilgeligi', name: 'Öz Bilgeliği', emoji: '🔮',
+    desc: 'Kristal kazancı +%50 (seviye başına)',
+    baseCost: 3, costGrowth: 2.2, maxLevel: Infinity,
+  },
+  {
+    id: 'ozHafizasi', name: 'Öz Hafızası', emoji: '🧠',
+    desc: "Diyar geçişinde Yıldız Tozu'nun %10'u korunur (seviye başına)",
+    baseCost: 3, costGrowth: 2.5, maxLevel: 5,
+  },
+  {
+    id: 'bolgeSicramasi', name: 'Bölge Sıçraması', emoji: '🐇',
+    desc: "Boss'u aşırı hasarla kesince ekstra bölge atla: 10^10 kat +1, her ek 10^5 kat +1 (maks = seviye)",
+    baseCost: 2, costGrowth: 3, maxLevel: 5,
+  },
 ];
 
 // ---- Artifact sistemi ----
@@ -307,6 +340,34 @@ export const ARTIFACTS = [
   { id: 'tanriKatili',   name: 'Tanrı Katili Kılıcı',  emoji: '⚡', rarity: 'efsanevi', effect: 'click', value: 10.00 },
   { id: 'ejderKalbi',    name: 'Kadim Ejder Kalbi',    emoji: '❤️‍🔥', rarity: 'efsanevi', effect: 'dps',   value: 10.00 },
 ];
+
+// ---- Öz artifact'leri (Diyar katmanı) ----
+// Öz 🌀 ile çekilir; taban havuzdan kat kat güçlüdür. `oz: true` → geliştirme
+// maliyeti REALM_ARTIFACT_UPGRADE_MULT ile çarpılır. Aynı `artifacts` haritasında yaşar.
+export const REALM_ARTIFACTS = [
+  // --- Sıradan (3) ---
+  { id: 'ozKilic',       name: 'Öz Kılıcı',        emoji: '🌌', rarity: 'siradan', effect: 'click',   value: 1.5,  oz: true },
+  { id: 'ozZirh',        name: 'Öz Zırhı',         emoji: '🌫️', rarity: 'siradan', effect: 'dps',     value: 1.5,  oz: true },
+  { id: 'ozSikke',       name: 'Öz Sikkesi',       emoji: '🫧', rarity: 'siradan', effect: 'gold',    value: 1.2,  oz: true },
+  // --- Olağandışı (3) ---
+  { id: 'kaosPencesi',   name: 'Kaos Pençesi',     emoji: '🌪️', rarity: 'olagandisi', effect: 'click',   value: 4,   oz: true },
+  { id: 'boyutPusulasi', name: 'Boyut Pusulası',   emoji: '🛸', rarity: 'olagandisi', effect: 'offline', value: 3,   oz: true },
+  { id: 'gecitAnahtari', name: 'Geçit Anahtarı',   emoji: '🗝️', rarity: 'olagandisi', effect: 'crystal', value: 0.8, oz: true },
+  // --- Nadir (3) ---
+  { id: 'yildizYutan',   name: 'Yıldız Yutan',     emoji: '🕳️', rarity: 'nadir', effect: 'click', value: 10, oz: true },
+  { id: 'alevCekirdegi', name: 'Kuyruklu Yıldız Çekirdeği', emoji: '☄️', rarity: 'nadir', effect: 'dps', value: 10, oz: true },
+  { id: 'zamanMotoru',   name: 'Zaman Motoru',     emoji: '⚙️', rarity: 'nadir', effect: 'gold',  value: 8,  oz: true },
+  // --- Epik (2) ---
+  { id: 'diyarKirici',   name: 'Diyar Kırıcı',     emoji: '🔱', rarity: 'epik', effect: 'critMult', value: 3, oz: true },
+  { id: 'sonsuzlukGozu', name: 'Sonsuzluk Gözü',   emoji: '👁️‍🗨️', rarity: 'epik', effect: 'crystal',  value: 2, oz: true },
+  // --- Efsanevi (1) ---
+  { id: 'ilkOz',         name: 'İlk Öz',           emoji: '🧬', rarity: 'efsanevi', effect: 'dps', value: 60, oz: true },
+];
+
+export const ALL_ARTIFACTS = [...ARTIFACTS, ...REALM_ARTIFACTS];
+export const REALM_PULL_COST_BASE = 5; // ilk Öz sandığı fiyatı (🌀)
+export const REALM_PULL_COST_GROWTH = 1.15; // her Öz çekilişinde fiyat çarpanı
+export const REALM_ARTIFACT_UPGRADE_MULT = 30; // Öz artifact'i geliştirme maliyeti çarpanı (kristal)
 
 // ---- Yaratık kataloğu ----
 // Her 10 stage'lik dilimin 3 klasik RPG yaratığı vardır; dilimler biterse baştan döner.

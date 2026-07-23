@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../store/gameStore.js';
-import { ARTIFACTS, RARITIES, ARTIFACT_MAX_LEVEL } from '../game/constants.js';
-import { pullCost, rarityOdds, artifactUpgradeCost } from '../game/formulas.js';
+import {
+  ARTIFACTS, REALM_ARTIFACTS, ALL_ARTIFACTS, RARITIES, ARTIFACT_MAX_LEVEL, REALM_STAGE,
+} from '../game/constants.js';
+import { pullCost, realmPullCost, rarityOdds, artifactUpgradeCost } from '../game/formulas.js';
 import { useT } from '../game/i18n.js';
 import { fmt } from '../utils/format.js';
 
@@ -26,9 +28,9 @@ function effectText(tr, art, level) {
 const artName = (tr, art) => tr.dn('artifact', art.id, art.name);
 const rarityName = (tr, r) => tr.dn('rarity', r.id, r.name);
 
-function weightedRandomArtifact(artifacts) {
-  const odds = rarityOdds(artifacts);
-  if (odds.length === 0) return ARTIFACTS[0];
+function weightedRandomArtifact(artifacts, poolList) {
+  const odds = rarityOdds(artifacts, poolList);
+  if (odds.length === 0) return poolList[0];
   let roll = Math.random() * 100;
   let rarityId = odds[odds.length - 1].id;
   for (const o of odds) {
@@ -38,18 +40,18 @@ function weightedRandomArtifact(artifacts) {
     }
     roll -= o.chance;
   }
-  const pool = ARTIFACTS.filter((a) => a.rarity === rarityId && (artifacts[a.id] ?? 0) === 0);
+  const pool = poolList.filter((a) => a.rarity === rarityId && (artifacts[a.id] ?? 0) === 0);
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-function CaseOpening({ opening, nextCost, crystals, allOwned, onAgain, onClose }) {
-  const { reel, result, seq } = opening;
+function CaseOpening({ opening, nextCost, canAgain, onAgain, onClose }) {
+  const { reel, result, seq, oz } = opening;
   const tr = useT();
   const wrapRef = useRef(null);
   const [offset, setOffset] = useState(0);
   const [revealed, setRevealed] = useState(false);
 
-  const won = ARTIFACTS.find((a) => a.id === result.id);
+  const won = ALL_ARTIFACTS.find((a) => a.id === result.id);
   const wonRarity = rarityOf(won);
 
   useEffect(() => {
@@ -77,7 +79,7 @@ function CaseOpening({ opening, nextCost, crystals, allOwned, onAgain, onClose }
   return (
     <div className="modal-backdrop" onClick={revealed ? onClose : undefined}>
       <div className="case-modal" onClick={(e) => e.stopPropagation()}>
-        <h2 className="case-title">{tr.t('ancient_chest')}</h2>
+        <h2 className="case-title">{tr.t(oz ? 'oz_chest' : 'ancient_chest')}</h2>
         <div className="case-reel-wrap" ref={wrapRef}>
           <div className="case-marker" />
           <div
@@ -113,12 +115,12 @@ function CaseOpening({ opening, nextCost, crystals, allOwned, onAgain, onClose }
               <div className="confirm-buttons case-buttons">
                 <button
                   type="button"
-                  className="pull-btn small"
-                  disabled={crystals < nextCost || allOwned}
+                  className={`pull-btn small ${oz ? 'oz' : ''}`}
+                  disabled={!canAgain}
                   onClick={onAgain}
                 >
                   {tr.t('chest_again')}
-                  <span className="buy-cost">💎 {fmt(nextCost)}</span>
+                  <span className="buy-cost">{oz ? '🌀' : '💎'} {fmt(nextCost)}</span>
                 </button>
                 <button type="button" className="ghost" onClick={onClose}>
                   {tr.t('close')}
@@ -134,30 +136,80 @@ function CaseOpening({ opening, nextCost, crystals, allOwned, onAgain, onClose }
   );
 }
 
+function OddsRow({ artifacts, poolList, tr }) {
+  return (
+    <div className="odds-row">
+      {rarityOdds(artifacts, poolList).map((r) => (
+        <span key={r.id} className="odds" style={{ color: r.color }}>
+          %{Number.isInteger(r.chance) ? r.chance : r.chance.toFixed(1)} {rarityName(tr, r)}
+          <span className="odds-remaining">{tr.t('odds_remaining', { n: r.remaining })}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function ArtGrid({ list, artifacts, selectedId, onSelect, tr }) {
+  return (
+    <div className="artifact-grid">
+      {list.map((art) => {
+        const level = artifacts[art.id] ?? 0;
+        const owned = level > 0;
+        const r = rarityOf(art);
+        return (
+          <button
+            key={art.id}
+            type="button"
+            className={`artifact-cell ${owned ? 'owned' : ''} ${selectedId === art.id ? 'selected' : ''}`}
+            style={{ '--rarity': r.color }}
+            onClick={() => onSelect(selectedId === art.id ? null : art.id)}
+            title={owned ? `${artName(tr, art)} — ${effectText(tr, art, level)}` : `${rarityName(tr, r)} ?`}
+          >
+            <span className="artifact-emoji">{owned ? art.emoji : '❔'}</span>
+            {owned && <span className="artifact-lv">{level}</span>}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function ArtifactPanel() {
   const crystals = useGameStore((s) => s.crystals);
+  const essence = useGameStore((s) => s.essence);
   const artifacts = useGameStore((s) => s.artifacts);
   const totalPulls = useGameStore((s) => s.totalPulls);
+  const totalRealmPulls = useGameStore((s) => s.totalRealmPulls);
+  const showOz = useGameStore(
+    (s) =>
+      s.highestStage >= REALM_STAGE || s.essence > 0 ||
+      REALM_ARTIFACTS.some((a) => (s.artifacts[a.id] ?? 0) > 0)
+  );
   const tr = useT();
   const { t } = tr;
   const [selectedId, setSelectedId] = useState(null);
   const [opening, setOpening] = useState(null);
 
   const cost = pullCost(totalPulls);
+  const ozCost = realmPullCost(totalRealmPulls);
   const ownedCount = ARTIFACTS.filter((a) => (artifacts[a.id] ?? 0) > 0).length;
+  const ozOwnedCount = REALM_ARTIFACTS.filter((a) => (artifacts[a.id] ?? 0) > 0).length;
   const allOwned = ownedCount === ARTIFACTS.length;
-  const selected = selectedId ? ARTIFACTS.find((a) => a.id === selectedId) : null;
+  const ozAllOwned = ozOwnedCount === REALM_ARTIFACTS.length;
+  const selected = selectedId ? ALL_ARTIFACTS.find((a) => a.id === selectedId) : null;
 
-  function startPull() {
+  function startPull(oz) {
     const st = useGameStore.getState();
-    const before = st.totalPulls;
-    st.pullArtifact();
+    const poolList = oz ? REALM_ARTIFACTS : ARTIFACTS;
+    const before = oz ? st.totalRealmPulls : st.totalPulls;
+    if (oz) st.pullRealmArtifact();
+    else st.pullArtifact();
     const after = useGameStore.getState();
-    if (after.totalPulls === before) return;
-    const won = ARTIFACTS.find((a) => a.id === after.lastPull.id);
-    const reel = Array.from({ length: REEL_LEN }, () => weightedRandomArtifact(st.artifacts));
+    if ((oz ? after.totalRealmPulls : after.totalPulls) === before) return;
+    const won = ALL_ARTIFACTS.find((a) => a.id === after.lastPull.id);
+    const reel = Array.from({ length: REEL_LEN }, () => weightedRandomArtifact(st.artifacts, poolList));
     reel[TARGET_INDEX] = won;
-    setOpening((prev) => ({ reel, result: after.lastPull, seq: (prev?.seq ?? 0) + 1 }));
+    setOpening((prev) => ({ reel, result: after.lastPull, seq: (prev?.seq ?? 0) + 1, oz }));
   }
 
   return (
@@ -167,16 +219,9 @@ export default function ArtifactPanel() {
         dangerouslySetInnerHTML={{ __html: t('artifact_note', { n: ARTIFACT_MAX_LEVEL }) }}
       />
 
-      <div className="odds-row">
-        {rarityOdds(artifacts).map((r) => (
-          <span key={r.id} className="odds" style={{ color: r.color }}>
-            %{Number.isInteger(r.chance) ? r.chance : r.chance.toFixed(1)} {rarityName(tr, r)}
-            <span className="odds-remaining">{t('odds_remaining', { n: r.remaining })}</span>
-          </span>
-        ))}
-      </div>
+      <OddsRow artifacts={artifacts} poolList={ARTIFACTS} tr={tr} />
 
-      <button type="button" className="pull-btn" disabled={crystals < cost || allOwned} onClick={startPull}>
+      <button type="button" className="pull-btn" disabled={crystals < cost || allOwned} onClick={() => startPull(false)}>
         {t('open_chest')}
         <span className="buy-cost">💎 {fmt(cost)}</span>
       </button>
@@ -188,26 +233,27 @@ export default function ArtifactPanel() {
         {t('collection', { o: ownedCount, t: ARTIFACTS.length, p: fmt(totalPulls) })}
       </div>
 
-      <div className="artifact-grid">
-        {ARTIFACTS.map((art) => {
-          const level = artifacts[art.id] ?? 0;
-          const owned = level > 0;
-          const r = rarityOf(art);
-          return (
-            <button
-              key={art.id}
-              type="button"
-              className={`artifact-cell ${owned ? 'owned' : ''} ${selectedId === art.id ? 'selected' : ''}`}
-              style={{ '--rarity': r.color }}
-              onClick={() => setSelectedId(selectedId === art.id ? null : art.id)}
-              title={owned ? `${artName(tr, art)} — ${effectText(tr, art, level)}` : `${rarityName(tr, r)} ?`}
-            >
-              <span className="artifact-emoji">{owned ? art.emoji : '❔'}</span>
-              {owned && <span className="artifact-lv">{level}</span>}
-            </button>
-          );
-        })}
-      </div>
+      <ArtGrid list={ARTIFACTS} artifacts={artifacts} selectedId={selectedId} onSelect={setSelectedId} tr={tr} />
+
+      {showOz && (
+        <>
+          <div className="collection-head essence-text">
+            {t('oz_collection', { o: ozOwnedCount, t: REALM_ARTIFACTS.length, p: fmt(totalRealmPulls) })}
+          </div>
+
+          <OddsRow artifacts={artifacts} poolList={REALM_ARTIFACTS} tr={tr} />
+
+          <button type="button" className="pull-btn oz" disabled={essence < ozCost || ozAllOwned} onClick={() => startPull(true)}>
+            {t('open_oz_chest')}
+            <span className="buy-cost">🌀 {fmt(ozCost)}</span>
+          </button>
+          {ozAllOwned && (
+            <div className="panel-note subtle">{t('collection_full', { a: REALM_ARTIFACTS.length })}</div>
+          )}
+
+          <ArtGrid list={REALM_ARTIFACTS} artifacts={artifacts} selectedId={selectedId} onSelect={setSelectedId} tr={tr} />
+        </>
+      )}
 
       {selected && (
         <div className="artifact-detail" style={{ '--rarity': rarityOf(selected).color }}>
@@ -256,10 +302,12 @@ export default function ArtifactPanel() {
       {opening && (
         <CaseOpening
           opening={opening}
-          nextCost={pullCost(totalPulls)}
-          crystals={crystals}
-          allOwned={allOwned}
-          onAgain={startPull}
+          nextCost={opening.oz ? realmPullCost(totalRealmPulls) : pullCost(totalPulls)}
+          canAgain={
+            opening.oz ? essence >= realmPullCost(totalRealmPulls) && !ozAllOwned
+              : crystals >= pullCost(totalPulls) && !allOwned
+          }
+          onAgain={() => startPull(opening.oz)}
           onClose={() => setOpening(null)}
         />
       )}

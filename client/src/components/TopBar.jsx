@@ -9,6 +9,8 @@ export default function TopBar() {
   const prestiges = useGameStore((s) => s.totalPrestiges);
   const stardust = useGameStore((s) => s.stardust);
   const transcends = useGameStore((s) => s.totalTranscends);
+  const realm = useGameStore((s) => s.realm);
+  const essence = useGameStore((s) => s.essence);
   const opMode = useGameStore((s) => s.opMode);
   const toggleOp = useGameStore((s) => s.toggleOp);
   const { t } = useT();
@@ -32,6 +34,11 @@ export default function TopBar() {
             💫 {fmt(stardust)}
           </span>
         )}
+        {(essence > 0 || realm > 1) && (
+          <span className="chip chip-essence" title={t('tip_essence')}>
+            🌀 {fmt(essence)}
+          </span>
+        )}
       </div>
       <button
         type="button"
@@ -44,6 +51,7 @@ export default function TopBar() {
       <div className="record">
         {t('record', { n: highest })}
         {prestiges > 0 && <span className="record-sub">{t('record_run', { n: prestiges })}</span>}
+        {realm > 1 && <span className="record-sub essence-text">{t('realm_label', { r: realm })}</span>}
       </div>
     </header>
   );

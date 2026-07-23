@@ -5,17 +5,34 @@ import {
   NPC_LEVEL_COST_FACTOR, NPC_COST_GROWTH,
   BOSS_TIME_BASE, PRESTIGE_STAGE, TRANSCEND_STAGE, KILLS_PER_STAGE, NPCS,
   PRESTIGE_UPGRADES, HERO_UPGRADES, STARDUST_UPGRADES,
-  ARTIFACTS, RARITIES, ARTIFACT_MAX_LEVEL, PULL_COST_BASE, PULL_COST_GROWTH,
+  ARTIFACTS, ALL_ARTIFACTS, RARITIES, ARTIFACT_MAX_LEVEL, PULL_COST_BASE, PULL_COST_GROWTH,
   ARTIFACT_UPGRADE_BASE, ARTIFACT_UPGRADE_GROWTH, ACHIEVEMENT_BONUS,
+  REALM_PULL_COST_BASE, REALM_PULL_COST_GROWTH, REALM_ARTIFACT_UPGRADE_MULT,
 } from './constants.js';
 
 // Başarım çarpanı: açılan her başarım hasarı ve altını %2 artırır
 export const achievementMult = (achCount = 0) => 1 + ACHIEVEMENT_BONUS * achCount;
 
+// ---- Diyar (3. katman) çarpanı ----
+// ponytail: modül-seviyesi değer — tüm formül imzalarına 2 parametre daha eklemek yerine
+// loadSaveData/doRealmShift/computeOffline'da set edilir; stardust çarpanları üzerinden
+// hasar + altına her yerden (paneller, offline, store) otomatik işler.
+let _realmDmg = 1;
+let _realmGold = 1;
+let _realmCrystal = 1;
+// Öz saf para birimidir (harcamak bonus düşürmez); pasif bonus yalnızca diyar sayısından gelir.
+export const realmBoostValue = (realm = 1) => Math.pow(2, realm - 1);
+export const setRealmBoost = (realm, essenceLevels = {}) => {
+  const base = realmBoostValue(realm);
+  _realmDmg = base * (1 + 0.6 * (essenceLevels.ozGucu ?? 0));
+  _realmGold = base;
+  _realmCrystal = 1 + 0.5 * (essenceLevels.ozBilgeligi ?? 0);
+};
+
 // ---- Aşkınlık (Yıldız Tozu) çarpanları ----
-export const stardustDamageMult = (sd = {}) => 1 + 0.4 * (sd.yildizGucu ?? 0);
-export const stardustGoldMult = (sd = {}) => 1 + 0.5 * (sd.yildizServeti ?? 0);
-export const stardustCrystalMult = (sd = {}) => 1 + 0.3 * (sd.yildizBilgeligi ?? 0);
+export const stardustDamageMult = (sd = {}) => (1 + 0.4 * (sd.yildizGucu ?? 0)) * _realmDmg;
+export const stardustGoldMult = (sd = {}) => (1 + 0.5 * (sd.yildizServeti ?? 0)) * _realmGold;
+export const stardustCrystalMult = (sd = {}) => (1 + 0.3 * (sd.yildizBilgeligi ?? 0)) * _realmCrystal;
 
 export const isBossStage = (stage) => stage % 10 === 0;
 
@@ -23,7 +40,7 @@ export const isBossStage = (stage) => stage % 10 === 0;
 // { click, dps, gold, critChance, critMult, bossTime, offline, crystal }
 export function artifactBonuses(artifacts = {}) {
   const b = { click: 0, dps: 0, gold: 0, critChance: 0, critMult: 0, bossTime: 0, offline: 0, crystal: 0 };
-  for (const a of ARTIFACTS) {
+  for (const a of ALL_ARTIFACTS) {
     const lv = artifacts[a.id] ?? 0;
     if (lv > 0) b[a.effect] += a.value * lv;
   }
@@ -38,14 +55,16 @@ export const bossHp = (stage) =>
 export const bossGold = (stage) =>
   creatureGold(stage) * (isBossStage(stage) ? BOSS_GOLD_MULT : MINIBOSS_GOLD_MULT);
 
-const milestoneMult = (level) => Math.pow(MILESTONE_MULT, Math.floor(level / MILESTONE_EVERY));
+// Yıldız Yarığı kilometre taşı aralığını daraltır (duvar kıran)
+export const milestoneEvery = (sd = {}) => MILESTONE_EVERY - (sd.yildizYarigi ?? 0);
+const milestoneMult = (level, sd) => Math.pow(MILESTONE_MULT, Math.floor(level / milestoneEvery(sd)));
 
 // ---- Kahraman ----
 export function clickDamage(heroLevel, prestigeLevels = {}, artifacts = {}, achCount = 0, sd = {}) {
   const keskin = prestigeLevels?.keskinVurus ?? 0;
   const art = artifactBonuses(artifacts);
   return (
-    (1 + heroLevel) * milestoneMult(heroLevel) * (1 + 0.5 * keskin) * (1 + art.click) *
+    (1 + heroLevel) * milestoneMult(heroLevel, sd) * (1 + 0.5 * keskin) * (1 + art.click) *
     achievementMult(achCount) * stardustDamageMult(sd)
   );
 }
@@ -73,7 +92,7 @@ export function npcDps(npc, level, prestigeLevels = {}, artifacts = {}, achCount
   const komutan = prestigeLevels?.komutanlik ?? 0;
   const art = artifactBonuses(artifacts);
   return (
-    npc.baseDps * level * milestoneMult(level) * (1 + 0.5 * komutan) * (1 + art.dps) *
+    npc.baseDps * level * milestoneMult(level, sd) * (1 + 0.5 * komutan) * (1 + art.dps) *
     achievementMult(achCount) * stardustDamageMult(sd)
   );
 }
@@ -156,10 +175,10 @@ export function pullCost(totalPulls) {
 
 // ---- Çekiliş oranları: sahip olunan artifact'ler loot havuzundan düşer,
 // kalan rarity'lerin şansları 100'e yeniden normalize edilir ----
-export function rarityOdds(artifacts = {}) {
+export function rarityOdds(artifacts = {}, pool = ARTIFACTS) {
   const available = RARITIES.map((r) => ({
     ...r,
-    remaining: ARTIFACTS.filter(
+    remaining: pool.filter(
       (a) => a.rarity === r.id && (artifacts[a.id] ?? 0) === 0
     ).length,
   })).filter((r) => r.remaining > 0);
@@ -171,8 +190,14 @@ export function rarityOdds(artifacts = {}) {
 // ---- Kristalle artifact geliştirme (level -> level+1 maliyeti) ----
 export function artifactUpgradeCost(artifact, level) {
   return Math.floor(
-    ARTIFACT_UPGRADE_BASE[artifact.rarity] * Math.pow(ARTIFACT_UPGRADE_GROWTH, level - 1)
+    ARTIFACT_UPGRADE_BASE[artifact.rarity] * (artifact.oz ? REALM_ARTIFACT_UPGRADE_MULT : 1) *
+      Math.pow(ARTIFACT_UPGRADE_GROWTH, level - 1)
   );
+}
+
+// ---- Öz sandığı fiyatı: her çekilişte artar ----
+export function realmPullCost(totalRealmPulls) {
+  return Math.floor(REALM_PULL_COST_BASE * Math.pow(REALM_PULL_COST_GROWTH, totalRealmPulls));
 }
 
 export function startingGold(prestigeLevels = {}) {
@@ -194,6 +219,29 @@ export function stardustUpgradeCost(upgrade, level) {
 export function startingCrystals(stardustLevels = {}) {
   const lv = stardustLevels?.yildizBaslangici ?? 0;
   return lv > 0 ? 50 * Math.pow(3, lv - 1) : 0;
+}
+
+// ---- Diyar Geçişi ----
+// Bankadaki Yıldız Tozu'na göre Öz; her geçiş için toz biriktirmen gerekir.
+export function essenceGain(stardust) {
+  if (stardust < 20000) return 0;
+  return Math.floor(3 * Math.sqrt(stardust / 20000));
+}
+
+export function essenceUpgradeCost(upgrade, level) {
+  return Math.ceil(upgrade.baseCost * Math.pow(upgrade.costGrowth, level));
+}
+
+// Öz Hafızası: diyar geçişinde korunan Yıldız Tozu
+export function keptStardust(stardust, essenceLevels = {}) {
+  return Math.floor(stardust * 0.1 * (essenceLevels.ozHafizasi ?? 0));
+}
+
+// Bölge Sıçraması: boss'u HP'sinin 10^10 katıyla kesmek +1 bölge atlatır,
+// sonraki her 10^5 kat +1 daha (üst sınır = upgrade seviyesi).
+export function stageLeap(ratio, level) {
+  if (level <= 0 || !(ratio >= 1e10)) return 0;
+  return Math.min(level, Math.floor(Math.log10(ratio) / 5) - 1);
 }
 
 export { PRESTIGE_UPGRADES, HERO_UPGRADES, STARDUST_UPGRADES, TRANSCEND_STAGE };

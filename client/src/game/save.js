@@ -1,6 +1,6 @@
 import { AUTOSAVE_MS, OFFLINE_CAP_HOURS } from './constants.js';
 import {
-  creatureHp, creatureGold, totalDps, goldMultiplier, artifactBonuses,
+  creatureHp, creatureGold, totalDps, goldMultiplier, artifactBonuses, setRealmBoost,
 } from './formulas.js';
 import { useGameStore } from '../store/gameStore.js';
 
@@ -11,6 +11,7 @@ function computeOffline(data, updatedAt) {
     OFFLINE_CAP_HOURS * 3600
   );
   if (elapsed < 60) return null; // 1 dakikadan kısa aralar için gösterme
+  setRealmBoost(data.realm ?? 1, data.essenceLevels ?? {}); // diyar çarpanı DPS/altına işlesin
   const artifacts = data.artifacts ?? {};
   const sd = data.stardustLevels ?? {};
   const achCount = Object.keys(data.achievements ?? {}).length;

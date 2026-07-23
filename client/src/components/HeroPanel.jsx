@@ -1,6 +1,6 @@
 import { useGameStore, selectors } from '../store/gameStore.js';
-import { MILESTONE_EVERY, HERO_UPGRADES } from '../game/constants.js';
-import { heroLevelCost, heroUpgradeCost, bulkCost, maxAffordable } from '../game/formulas.js';
+import { HERO_UPGRADES } from '../game/constants.js';
+import { heroLevelCost, heroUpgradeCost, bulkCost, maxAffordable, milestoneEvery } from '../game/formulas.js';
 import { useT } from '../game/i18n.js';
 import { fmt } from '../utils/format.js';
 import AmountToggle from './AmountToggle.jsx';
@@ -71,7 +71,8 @@ export default function HeroPanel() {
   const setAmount = useGameStore((s) => s.setBuyAmount);
   const { t } = useT();
 
-  const nextMilestone = (Math.floor(heroLevel / MILESTONE_EVERY) + 1) * MILESTONE_EVERY;
+  const mEvery = milestoneEvery(useGameStore((s) => s.stardustLevels));
+  const nextMilestone = (Math.floor(heroLevel / mEvery) + 1) * mEvery;
 
   let count, cost;
   if (amount === 'max') {
@@ -84,7 +85,7 @@ export default function HeroPanel() {
 
   return (
     <div className="panel-content">
-      <div className="panel-note">{t('hero_note', { n: MILESTONE_EVERY })}</div>
+      <div className="panel-note">{t('hero_note', { n: mEvery })}</div>
 
       <AmountToggle value={amount} onChange={setAmount} />
 

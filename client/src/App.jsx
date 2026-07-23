@@ -10,6 +10,7 @@ import NpcPanel from './components/NpcPanel.jsx';
 import ArtifactPanel from './components/ArtifactPanel.jsx';
 import PrestigePanel from './components/PrestigePanel.jsx';
 import TranscendPanel from './components/TranscendPanel.jsx';
+import RealmPanel from './components/RealmPanel.jsx';
 import AchievementsPanel from './components/AchievementsPanel.jsx';
 import SettingsPanel from './components/SettingsPanel.jsx';
 import OfflineModal from './components/OfflineModal.jsx';
@@ -28,6 +29,9 @@ export default function App() {
   const canPrestige = useGameStore(selectors.canPrestige);
   const transcendUnlocked = useGameStore(selectors.transcendUnlocked);
   const canTranscend = useGameStore((s) => selectors.transcendGain(s) > 0);
+  const realmUnlocked = useGameStore(selectors.realmUnlocked);
+  const canRealm = useGameStore((s) => selectors.essenceGain(s) > 0);
+  const claimableAch = useGameStore(selectors.claimableAchievements);
   const toast = useGameStore((s) => s.toast);
   const { t } = useT();
   const [tab, setTab] = useState('hero');
@@ -39,6 +43,7 @@ export default function App() {
     { id: 'artifact', label: t('tab_artifact') },
     { id: 'prestige', label: t('tab_prestige') },
     ...(transcendUnlocked ? [{ id: 'transcend', label: t('tab_transcend') }] : []),
+    ...(realmUnlocked ? [{ id: 'realm', label: t('tab_realm') }] : []),
     { id: 'achievements', label: t('tab_achievements') },
     { id: 'settings', label: t('tab_settings') },
   ];
@@ -67,6 +72,8 @@ export default function App() {
                 {t.label}
                 {t.id === 'prestige' && canPrestige && <span className="tab-dot" />}
                 {t.id === 'transcend' && canTranscend && <span className="tab-dot stardust-dot" />}
+                {t.id === 'realm' && canRealm && <span className="tab-dot essence-dot" />}
+                {t.id === 'achievements' && claimableAch > 0 && <span className="tab-dot" />}
               </button>
             ))}
           </nav>
@@ -76,6 +83,7 @@ export default function App() {
             {tab === 'artifact' && <ArtifactPanel />}
             {tab === 'prestige' && <PrestigePanel />}
             {tab === 'transcend' && <TranscendPanel />}
+            {tab === 'realm' && <RealmPanel />}
             {tab === 'achievements' && <AchievementsPanel />}
             {tab === 'settings' && <SettingsPanel />}
           </div>

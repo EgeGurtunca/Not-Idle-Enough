@@ -1,3 +1,5 @@
+import { useGameStore } from '../store/gameStore.js';
+
 // Bölgeye göre arka plan manzarası — arenayı dolduran, atmosferik SVG sahneleri (resim yok).
 // Her 10 bölgede değişir. Yaratığın arkasında; ortada karartıcı vinyet ile yaratık öne çıkar.
 const tierOf = (stage) => Math.floor((stage - 1) / 10) % 8;
@@ -102,10 +104,16 @@ function scene(tier, z) {
 
 export default function ZoneScene({ stage }) {
   const tier = tierOf(stage);
+  const realm = useGameStore((s) => s.realm);
   const z = ZONES[tier];
   const sky = z.sky;
   return (
-    <div className="zone-scene" key={tier}>
+    <div
+      className="zone-scene"
+      key={tier}
+      // Her diyar aynı manzarayı başka bir renk evreninde gösterir
+      style={realm > 1 ? { filter: `hue-rotate(${(realm - 1) * 45}deg)` } : undefined}
+    >
       <svg viewBox="0 0 120 80" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
         <defs>
           <linearGradient id={`sky${tier}`} x1="0" y1="0" x2="0" y2="1">

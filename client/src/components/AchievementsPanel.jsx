@@ -22,6 +22,7 @@ function statValue(s, stat) {
 export default function AchievementsPanel() {
   const state = useGameStore();
   const count = useGameStore(selectors.achievementCount);
+  const claimable = useGameStore(selectors.claimableAchievements);
   const { stats } = state;
   const bonusPct = Math.round(count * ACHIEVEMENT_BONUS * 100);
   const { t, dnd } = useT();
@@ -33,6 +34,11 @@ export default function AchievementsPanel() {
           {t('ach_summary', { c: count, t: ACHIEVEMENTS.length })}
           <strong>{t('ach_bonus', { p: bonusPct })}</strong>
         </div>
+        {claimable > 0 && (
+          <button type="button" className="buy" onClick={state.claimAllAchievements}>
+            {t('ach_claim_all', { n: claimable })}
+          </button>
+        )}
         <div className="stats-grid">
           <span>{t('st_kills', { n: fmt(stats.totalKills) })}</span>
           <span>{t('st_boss', { n: fmt(stats.totalBossKills) })}</span>
@@ -47,15 +53,16 @@ export default function AchievementsPanel() {
       {ACHIEVEMENTS.map((a) => {
         const unlocked = !!state.achievements[a.id];
         const value = statValue(state, a.stat);
+        const claimable = !unlocked && value >= a.threshold;
         const pct = Math.min(100, (value / a.threshold) * 100);
         const loc = dnd('ach', a.id, a.name, a.desc);
         return (
           <div className={`row ach-row ${unlocked ? 'unlocked' : ''}`} key={a.id}>
-            <span className="row-emoji">{unlocked ? a.emoji : '🔒'}</span>
+            <span className="row-emoji">{unlocked || claimable ? a.emoji : '🔒'}</span>
             <div className="row-info">
               <div className="row-name">{loc.name}</div>
               <div className="row-sub">{loc.desc}</div>
-              {!unlocked && (
+              {!unlocked && !claimable && (
                 <div className="ach-progress">
                   <div className="ach-progress-fill" style={{ width: `${pct}%` }} />
                 </div>
@@ -63,6 +70,10 @@ export default function AchievementsPanel() {
             </div>
             {unlocked ? (
               <span className="maxed">✓</span>
+            ) : claimable ? (
+              <button type="button" className="buy" onClick={() => state.claimAchievement(a.id)}>
+                {t('ach_claim')}
+              </button>
             ) : (
               <span className="ach-count">
                 {fmt(Math.min(value, a.threshold))}/{fmt(a.threshold)}

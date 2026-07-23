@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import {
-  PRESTIGE_STAGE, TRANSCEND_STAGE, NPCS, PRESTIGE_UPGRADES, HERO_UPGRADES,
-  STARDUST_UPGRADES, ARTIFACTS, ARTIFACT_MAX_LEVEL, SKILLS, ACHIEVEMENTS, MILESTONES,
+  PRESTIGE_STAGE, TRANSCEND_STAGE, REALM_STAGE, NPCS, PRESTIGE_UPGRADES, HERO_UPGRADES,
+  STARDUST_UPGRADES, ESSENCE_UPGRADES, ARTIFACTS, REALM_ARTIFACTS, ALL_ARTIFACTS,
+  ARTIFACT_MAX_LEVEL, SKILLS, ACHIEVEMENTS, MILESTONES,
   creatureType, bossName, rollBossModifier, npcPassiveBonus,
 } from '../game/constants.js';
 import {
@@ -11,6 +12,7 @@ import {
   crystalGain, prestigeUpgradeCost, startingGold, pullCost, killsRequired,
   rarityOdds, artifactUpgradeCost,
   transcendGain, stardustUpgradeCost, startingCrystals,
+  essenceGain, setRealmBoost, essenceUpgradeCost, keptStardust, stageLeap, realmPullCost,
 } from '../game/formulas.js';
 import { sfx, setMuted } from '../game/audio.js';
 import { fmt } from '../utils/format.js';
@@ -25,6 +27,7 @@ let autoTimer = 0; // Oto-Seviye throttle
 let stuckTimer = 0; // Oto-Prestij: ilerleme yoksa geçen süre
 let lastStageSeen = 1;
 let lastClickAt = 0; // kombo penceresi için son klik zamanı
+const announcedAch = new Set(); // bu oturumda "almaya hazır" diye duyurulan başarımlar
 const COMBO_WINDOW = 1200; // ms
 const COMBO_MAX = 50;
 
@@ -115,7 +118,11 @@ export const useGameStore = create((set, get) => ({
   artifacts: {}, // id -> seviye; prestijde KORUNUR
   stardust: 0, // Yıldız Tozu (aşkınlıkta bile korunur)
   stardustLevels: {}, // kalıcı aşkınlık upgrade'leri
+  realm: 1, // mevcut diyar (3. katman; diyar geçişinde +1)
+  essence: 0, // Öz 🌀 (diyar geçişinde kazanılır, hiçbir zaman sıfırlanmaz)
+  essenceLevels: {}, // kalıcı Öz geliştirmeleri (hiçbir sıfırlamada kaybolmaz)
   totalPulls: 0,
+  totalRealmPulls: 0, // Öz sandığı çekiliş sayısı
   totalPrestiges: 0,
   totalTranscends: 0,
   stats: { ...DEFAULT_STATS },
@@ -290,22 +297,41 @@ export const useGameStore = create((set, get) => ({
     sfx.achievement();
   },
 
+  // Başarımlar otomatik VERİLMEZ; eşik dolunca yalnızca duyurulur, oyuncu panelden alır.
   _checkAchievements() {
     const s = get();
-    const unlocked = {};
+    const ids = [];
     for (const a of ACHIEVEMENTS) {
-      if (!s.achievements[a.id] && statValue(s, a.stat) >= a.threshold) {
-        unlocked[a.id] = true;
+      if (!s.achievements[a.id] && !announcedAch.has(a.id) && statValue(s, a.stat) >= a.threshold) {
+        ids.push(a.id);
+        announcedAch.add(a.id);
       }
     }
-    const ids = Object.keys(unlocked);
     if (ids.length === 0) return;
-    set({ achievements: { ...s.achievements, ...unlocked } });
     const first = ACHIEVEMENTS.find((a) => a.id === ids[0]);
     const name = dnd(s.lang, 'ach', first.id, first.name, first.desc).name;
     const extra = ids.length > 1 ? translate(s.lang, 'toast_ach_extra', { n: ids.length - 1 }) : '';
     get()._showToast(translate(s.lang, 'toast_ach', { emoji: first.emoji, name, extra }));
     sfx.achievement();
+  },
+
+  claimAchievement(achievementId) {
+    const s = get();
+    const a = ACHIEVEMENTS.find((x) => x.id === achievementId);
+    if (!a || s.achievements[a.id] || statValue(s, a.stat) < a.threshold) return;
+    sfx.achievement();
+    set({ achievements: { ...s.achievements, [a.id]: true } });
+  },
+
+  claimAllAchievements() {
+    const s = get();
+    const claimed = {};
+    for (const a of ACHIEVEMENTS) {
+      if (!s.achievements[a.id] && statValue(s, a.stat) >= a.threshold) claimed[a.id] = true;
+    }
+    if (Object.keys(claimed).length === 0) return;
+    sfx.achievement();
+    set({ achievements: { ...s.achievements, ...claimed } });
   },
 
   _applyDamage(amount, isClick = false) {
@@ -326,7 +352,9 @@ export const useGameStore = create((set, get) => ({
     if (s.opMode) gmult *= 1000;
     if (s.enemy.kind === 'boss') {
       const reward = bossGold(s.stage) * gmult * (s.enemy.goldMult ?? 1);
-      const nextStage = s.stage + 1; // 500 sonrası sonsuz (float tavanına kadar)
+      // Bölge Sıçraması: boss aşırı hasarla ölürse ekstra bölge atla
+      const leap = stageLeap(amount / (s.enemy.maxHp || 1), s.essenceLevels.bolgeSicramasi ?? 0);
+      const nextStage = s.stage + 1 + leap; // 500 sonrası sonsuz (float tavanına kadar)
       sfx.bossWin();
       set({
         gold: s.gold + reward,
@@ -343,6 +371,9 @@ export const useGameStore = create((set, get) => ({
         bossTimeLeft: 0,
         enemy: makeCreature(nextStage),
       });
+      if (leap > 0) {
+        get()._showToast(translate(s.lang, 'toast_leap', { n: leap, s: nextStage }));
+      }
     } else {
       const required = killsRequired(s.prestigeLevels);
       // Overkill: canın 10 katını vurunca +1, 100 katı +2, 1000 katı +3… (logaritmik)
@@ -548,10 +579,39 @@ export const useGameStore = create((set, get) => ({
     });
   },
 
+  // Öz sandığı: aynı mekanik, para birimi Öz 🌀, havuz Öz artifact'leri
+  pullRealmArtifact() {
+    const s = get();
+    const cost = realmPullCost(s.totalRealmPulls);
+    if (s.essence < cost) return;
+    const odds = rarityOdds(s.artifacts, REALM_ARTIFACTS);
+    if (odds.length === 0) return; // koleksiyon tamam
+    let roll = Math.random() * 100;
+    let rarityId = odds[odds.length - 1].id;
+    for (const o of odds) {
+      if (roll < o.chance) {
+        rarityId = o.id;
+        break;
+      }
+      roll -= o.chance;
+    }
+    const pool = REALM_ARTIFACTS.filter(
+      (a) => a.rarity === rarityId && (s.artifacts[a.id] ?? 0) === 0
+    );
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    sfx.chest();
+    set({
+      essence: s.essence - cost,
+      artifacts: { ...s.artifacts, [pick.id]: 1 },
+      totalRealmPulls: s.totalRealmPulls + 1,
+      lastPull: { id: pick.id, level: 1, isNew: true },
+    });
+  },
+
   // Kristalle doğrudan geliştirme (sahip olunan, maks olmayan artifact)
   upgradeArtifact(artifactId) {
     const s = get();
-    const art = ARTIFACTS.find((a) => a.id === artifactId);
+    const art = ALL_ARTIFACTS.find((a) => a.id === artifactId);
     if (!art) return;
     const level = s.artifacts[artifactId] ?? 0;
     if (level < 1 || level >= ARTIFACT_MAX_LEVEL) return;
@@ -593,6 +653,59 @@ export const useGameStore = create((set, get) => ({
       totalTranscends: s.totalTranscends + 1,
     });
     get()._showToast(translate(get().lang, 'toast_transcend', { n: gain }));
+  },
+
+  // ---- Diyar Geçişi (3. katman) ----
+  doRealmShift() {
+    const s = get();
+    if (s.highestStage < REALM_STAGE) return;
+    const gain = essenceGain(s.stardust) * (s.opMode ? 1000 : 1);
+    if (gain <= 0) return;
+    sfx.prestige();
+    const realm = s.realm + 1;
+    const essence = s.essence + gain;
+    setRealmBoost(realm, s.essenceLevels);
+    // Alt katmanların TAMAMI sıfırlanır (kristal + yıldız tozu ve upgrade'leri dahil);
+    // artifact, başarım, kilometre taşları ve Öz geliştirmeleri korunur.
+    set({
+      ...freshRunState({}),
+      crystals: 0,
+      prestigeLevels: {},
+      stardust: keptStardust(s.stardust, s.essenceLevels), // Öz Hafızası payı
+      stardustLevels: {},
+      realm,
+      essence,
+    });
+    get()._showToast(translate(get().lang, 'toast_realm', { n: gain, r: realm }));
+  },
+
+  buyEssenceUpgradeLevels(upgradeId, count) {
+    const s = get();
+    const up = ESSENCE_UPGRADES.find((u) => u.id === upgradeId);
+    if (!up) return;
+    const level = s.essenceLevels[upgradeId] ?? 0;
+    const capped = Math.min(count, up.maxLevel - level);
+    if (capped <= 0) return;
+    const cost = bulkCost((l) => essenceUpgradeCost(up, l), level, capped);
+    if (s.essence < cost) return;
+    sfx.buy();
+    const essenceLevels = { ...s.essenceLevels, [upgradeId]: level + capped };
+    set({ essence: s.essence - cost, essenceLevels });
+    setRealmBoost(s.realm, essenceLevels);
+  },
+
+  buyEssenceUpgradeMax(upgradeId) {
+    const s = get();
+    const up = ESSENCE_UPGRADES.find((u) => u.id === upgradeId);
+    if (!up) return;
+    const level = s.essenceLevels[upgradeId] ?? 0;
+    const cap = Math.min(1000, up.maxLevel - level);
+    const { count, cost } = maxAffordable((l) => essenceUpgradeCost(up, l), level, s.essence, cap);
+    if (count <= 0) return;
+    sfx.buy();
+    const essenceLevels = { ...s.essenceLevels, [upgradeId]: level + count };
+    set({ essence: s.essence - cost, essenceLevels });
+    setRealmBoost(s.realm, essenceLevels);
   },
 
   buyStardustUpgradeLevels(upgradeId, count) {
@@ -674,7 +787,11 @@ export const useGameStore = create((set, get) => ({
       artifacts: s.artifacts,
       stardust: s.stardust,
       stardustLevels: s.stardustLevels,
+      realm: s.realm,
+      essence: s.essence,
+      essenceLevels: s.essenceLevels,
       totalPulls: s.totalPulls,
+      totalRealmPulls: s.totalRealmPulls,
       totalPrestiges: s.totalPrestiges,
       totalTranscends: s.totalTranscends,
       stats: s.stats,
@@ -690,6 +807,7 @@ export const useGameStore = create((set, get) => ({
   loadSaveData(data, offlineReport) {
     const stage = Math.max(1, data.stage ?? 1);
     setMuted(data.muted ?? false);
+    setRealmBoost(data.realm ?? 1, data.essenceLevels ?? {});
     set({
       gold: (data.gold ?? 0) + (offlineReport?.gold ?? 0),
       crystals: data.crystals ?? 0,
@@ -704,7 +822,11 @@ export const useGameStore = create((set, get) => ({
       artifacts: data.artifacts ?? {},
       stardust: data.stardust ?? 0,
       stardustLevels: data.stardustLevels ?? {},
+      realm: data.realm ?? 1,
+      essence: data.essence ?? 0,
+      essenceLevels: data.essenceLevels ?? {},
       totalPulls: data.totalPulls ?? 0,
+      totalRealmPulls: data.totalRealmPulls ?? 0,
       totalPrestiges: data.totalPrestiges ?? 0,
       totalTranscends: data.totalTranscends ?? 0,
       stats: { ...DEFAULT_STATS, ...(data.stats ?? {}) },
@@ -742,5 +864,9 @@ export const selectors = {
   canPrestige: (s) => s.runHighestStage >= PRESTIGE_STAGE,
   transcendUnlocked: (s) => s.highestStage >= TRANSCEND_STAGE,
   transcendGain: (s) => transcendGain(s.crystals) * (s.opMode ? 1000 : 1),
+  realmUnlocked: (s) => s.highestStage >= REALM_STAGE,
+  essenceGain: (s) => essenceGain(s.stardust) * (s.opMode ? 1000 : 1),
   achievementCount: (s) => achCount(s),
+  claimableAchievements: (s) =>
+    ACHIEVEMENTS.filter((a) => !s.achievements[a.id] && statValue(s, a.stat) >= a.threshold).length,
 };
