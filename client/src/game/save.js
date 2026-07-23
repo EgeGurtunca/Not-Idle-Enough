@@ -4,10 +4,13 @@ import {
 } from './formulas.js';
 import { useGameStore } from '../store/gameStore.js';
 
+// Kayıt tamamen tarayıcıda (localStorage) tutulur — statik hosting (GitHub Pages) için sunucu yok.
+const SAVE_KEY = 'solo-fan-idle-save';
+
 // Çevrimdışı kazanç: mevcut stage yaratıklarını DPS ile kesme hızına göre altın
-function computeOffline(data, updatedAt) {
+function computeOffline(data, savedAt) {
   const elapsed = Math.min(
-    Math.max(0, (Date.now() - Date.parse(updatedAt)) / 1000),
+    Math.max(0, (Date.now() - savedAt) / 1000),
     OFFLINE_CAP_HOURS * 3600
   );
   if (elapsed < 60) return null; // 1 dakikadan kısa aralar için gösterme
@@ -28,51 +31,35 @@ function computeOffline(data, updatedAt) {
   return { gold, seconds: elapsed };
 }
 
-// Yükleme başarısız olursa kaydetme tamamen kapatılır: aksi halde taze state,
-// sunucudaki gerçek kaydın üzerine yazılabilir (autosave/beacon ile).
-let saveDisabled = false;
-
-export async function loadGame() {
+export function loadGame() {
   const store = useGameStore.getState();
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    try {
-      const res = await fetch('/api/save');
-      if (!res.ok) throw new Error(`GET /api/save ${res.status}`);
-      const body = await res.json();
-      if (!body || !body.data) {
-        store.startFresh();
-        return;
-      }
-      const offline = computeOffline(body.data, body.updatedAt);
-      store.loadSaveData(body.data, offline);
-      return;
-    } catch (err) {
-      if (attempt === 3) {
-        saveDisabled = true;
-        console.error(
-          '[save] Kayıt 3 denemede yüklenemedi; sunucudaki kayıt korunsun diye ' +
-            'kaydetme KAPATILDI. Sunucu çalışınca sayfayı yenile.',
-          err
-        );
-        store.startFresh();
-        return;
-      }
-      await new Promise((r) => setTimeout(r, 800));
-    }
+  let raw;
+  try {
+    raw = localStorage.getItem(SAVE_KEY);
+  } catch {
+    raw = null; // gizli mod / localStorage kapalı
+  }
+  if (!raw) {
+    store.startFresh();
+    return;
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed || !parsed.data) throw new Error('empty save');
+    const offline = computeOffline(parsed.data, parsed.savedAt ?? Date.now());
+    store.loadSaveData(parsed.data, offline);
+  } catch (err) {
+    console.error('[save] Kayıt okunamadı, taze başlanıyor:', err);
+    store.startFresh();
   }
 }
 
-export async function saveGame() {
-  if (saveDisabled) return;
+export function saveGame() {
   const data = useGameStore.getState().getSaveData();
   try {
-    await fetch('/api/save', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ data, savedAt: Date.now() }));
   } catch (err) {
-    console.error('[save] Kayıt başarısız:', err);
+    console.error('[save] Kayıt yazılamadı:', err);
   }
 }
 
@@ -81,13 +68,10 @@ let autosaveId = null;
 export function setupAutosave() {
   if (autosaveId) return;
   autosaveId = setInterval(saveGame, AUTOSAVE_MS);
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden' && !saveDisabled) {
-      const data = useGameStore.getState().getSaveData();
-      navigator.sendBeacon(
-        '/api/save',
-        new Blob([JSON.stringify(data)], { type: 'application/json' })
-      );
-    }
-  });
+  // Sekme kapanır/gizlenirse anında yaz (localStorage senkron olduğundan beacon gerekmez)
+  const flush = () => {
+    if (document.visibilityState === 'hidden') saveGame();
+  };
+  document.addEventListener('visibilitychange', flush);
+  window.addEventListener('pagehide', saveGame);
 }

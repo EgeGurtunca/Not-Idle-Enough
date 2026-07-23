@@ -1,5 +1,5 @@
 import { useGameStore, selectors } from '../store/gameStore.js';
-import { ACHIEVEMENTS, ACHIEVEMENT_BONUS, ARTIFACTS } from '../game/constants.js';
+import { ACHIEVEMENTS, ACHIEVEMENT_BONUS, ARTIFACTS, REALM_ARTIFACTS } from '../game/constants.js';
 import { useT } from '../game/i18n.js';
 import { fmt } from '../utils/format.js';
 import StatsGraph from './StatsGraph.jsx';
@@ -12,8 +12,14 @@ function statValue(s, stat) {
       return s.totalPrestiges;
     case 'totalPulls':
       return s.totalPulls;
+    case 'totalTranscends':
+      return s.totalTranscends;
+    case 'realm':
+      return s.realm;
     case 'ownedArtifacts':
       return ARTIFACTS.filter((a) => (s.artifacts[a.id] ?? 0) > 0).length;
+    case 'ownedRealmArtifacts':
+      return REALM_ARTIFACTS.filter((a) => (s.artifacts[a.id] ?? 0) > 0).length;
     default:
       return s.stats[stat] ?? 0;
   }

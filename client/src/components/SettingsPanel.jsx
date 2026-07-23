@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useGameStore } from '../store/gameStore.js';
 import { saveGame } from '../game/save.js';
 import { useT } from '../game/i18n.js';
-import { fmt } from '../utils/format.js';
 
 // Minimal check that an imported JSON is actually a save
 function isValidSave(data) {
@@ -21,24 +20,9 @@ export default function SettingsPanel() {
   const lang = useGameStore((s) => s.lang);
   const setLang = useGameStore((s) => s.setLang);
   const { t } = useT();
-  const [backups, setBackups] = useState(null);
-  const [confirmRestore, setConfirmRestore] = useState(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const [message, setMessage] = useState('');
   const fileRef = useRef(null);
-
-  async function loadBackups() {
-    try {
-      const res = await fetch('/api/backups');
-      setBackups(await res.json());
-    } catch {
-      setBackups([]);
-    }
-  }
-
-  useEffect(() => {
-    loadBackups();
-  }, []);
 
   function exportSave() {
     const data = useGameStore.getState().getSaveData();
@@ -60,27 +44,14 @@ export default function SettingsPanel() {
       const data = JSON.parse(await file.text());
       if (!isValidSave(data)) throw new Error('invalid');
       useGameStore.getState().loadSaveData(data, null);
-      await saveGame();
+      saveGame();
       setMessage(t('msg_imported'));
     } catch {
       setMessage(t('msg_import_fail'));
     }
   }
 
-  async function restoreBackup(id) {
-    try {
-      const res = await fetch(`/api/backups/${id}/restore`, { method: 'POST' });
-      const body = await res.json();
-      if (!body.ok) throw new Error();
-      useGameStore.getState().loadSaveData(body.data, null);
-      setConfirmRestore(null);
-      setMessage(t('msg_restored'));
-    } catch {
-      setMessage(t('msg_restore_fail'));
-    }
-  }
-
-  async function resetSave() {
+  function resetSave() {
     const fresh = {
       gold: 0, crystals: 0, stage: 1, highestStage: 1, runHighestStage: 1, kills: 0,
       heroLevel: 0, heroUpgrades: {}, npcLevels: {}, prestigeLevels: {}, artifacts: {},
@@ -88,7 +59,7 @@ export default function SettingsPanel() {
       muted: useGameStore.getState().muted, lang: useGameStore.getState().lang, buyAmount: 1,
     };
     useGameStore.getState().loadSaveData(fresh, null);
-    await saveGame();
+    saveGame();
     setConfirmReset(false);
     setMessage(t('msg_reset'));
   }
@@ -176,47 +147,7 @@ export default function SettingsPanel() {
       </div>
 
       {message && <div className="panel-note subtle">{message}</div>}
-
-      <div className="collection-head">
-        {t('backups_head')}
-        <button type="button" className="link-btn" onClick={loadBackups}>
-          {t('refresh')}
-        </button>
-      </div>
-
-      {backups === null && <div className="panel-note subtle">{t('backups_loading')}</div>}
-      {backups?.length === 0 && <div className="panel-note subtle">{t('backups_none')}</div>}
-      {backups?.map((b) => (
-        <div className="row" key={b.id}>
-          <span className="row-emoji">🗄️</span>
-          <div className="row-info">
-            <div className="row-name">
-              {new Date(b.created_at).toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-GB', {
-                day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
-              })}
-            </div>
-            <div className="row-sub">
-              {t('backup_row', {
-                s: b.stage, h: b.highest, g: fmt(Number(b.gold)), c: fmt(Number(b.crystals)),
-              })}
-            </div>
-          </div>
-          {confirmRestore === b.id ? (
-            <div className="confirm-buttons">
-              <button type="button" className="prestige-btn danger" onClick={() => restoreBackup(b.id)}>
-                {t('yes')}
-              </button>
-              <button type="button" className="ghost" onClick={() => setConfirmRestore(null)}>
-                {t('cancel')}
-              </button>
-            </div>
-          ) : (
-            <button type="button" className="ghost" onClick={() => setConfirmRestore(b.id)}>
-              {t('restore')}
-            </button>
-          )}
-        </div>
-      ))}
+      <div className="panel-note subtle">{t('save_local_note')}</div>
     </div>
   );
 }

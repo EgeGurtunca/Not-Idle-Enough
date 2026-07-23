@@ -102,6 +102,15 @@ export const ACHIEVEMENTS = [
   { id: 'gold1',    name: 'Milyarder',          emoji: '🪙', desc: 'Toplam 1B altın kazan',      stat: 'totalGoldEarned', threshold: 1e9 },
   { id: 'gold2',    name: 'Kentilyoner',        emoji: '💰', desc: 'Toplam 1Qi altın kazan',     stat: 'totalGoldEarned', threshold: 1e18 },
   { id: 'gold3',    name: 'Altın Tanrısı',      emoji: '👑', desc: 'Toplam 1e30 altın kazan',    stat: 'totalGoldEarned', threshold: 1e30 },
+  // --- Aşkınlık & Diyar katmanı ---
+  { id: 'stage6',   name: 'Aşkın',              emoji: '✦',  desc: 'Bölge 750\'ye ulaş',         stat: 'highestStage',    threshold: 750 },
+  { id: 'stage7',   name: 'Diyar Gezgini',      emoji: '🌀', desc: 'Bölge 1000\'e ulaş',         stat: 'highestStage',    threshold: 1000 },
+  { id: 'trans1',   name: 'Yıldız Doğuşu',      emoji: '💫', desc: 'İlk kez aşkınlaş',           stat: 'totalTranscends', threshold: 1 },
+  { id: 'trans2',   name: 'Takımyıldız',        emoji: '🌌', desc: '10 kez aşkınlaş',            stat: 'totalTranscends', threshold: 10 },
+  { id: 'realm1',   name: 'Boyut Kâşifi',       emoji: '🌠', desc: 'İlk diyar geçişini yap',     stat: 'realm',           threshold: 2 },
+  { id: 'realm2',   name: 'Çok Evrenli',        emoji: '🪐', desc: 'Diyar 5\'e ulaş',            stat: 'realm',           threshold: 5 },
+  { id: 'ozart1',   name: 'Öz Toplayıcı',       emoji: '🧬', desc: '6 Öz artifact\'i topla',     stat: 'ownedRealmArtifacts', threshold: 6 },
+  { id: 'ozart2',   name: 'Sonsuzluk Kasası',   emoji: '👁️‍🗨️', desc: '12 Öz artifact\'i topla',    stat: 'ownedRealmArtifacts', threshold: 12 },
 ];
 
 // ---- Kilometre taşı ödülleri ----
@@ -118,6 +127,9 @@ export const MILESTONES = [
   { stage: 300, crystals: 9000 },
   { stage: 400, crystals: 30000 },
   { stage: 500, crystals: 100000 },
+  { stage: 600, crystals: 300000 },
+  { stage: 750, crystals: 1000000 },
+  { stage: 1000, crystals: 5000000 },
 ];
 
 // ---- NPC'ler (Yoldaşlar) ----

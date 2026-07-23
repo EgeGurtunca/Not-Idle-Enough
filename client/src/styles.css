@@ -183,33 +183,6 @@ button:disabled {
   box-shadow: var(--card-hi), 0 0 16px -6px #5ee6dc;
 }
 
-.op-btn {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 1px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px dashed var(--line);
-  background: none;
-  color: var(--bone-dim);
-  opacity: 0.7;
-}
-
-.op-btn.on {
-  border: 1px solid var(--blood);
-  color: var(--blood);
-  opacity: 1;
-  box-shadow: 0 0 12px -4px var(--blood);
-  animation: oppulse 1.6s ease-in-out infinite;
-}
-
-@keyframes oppulse {
-  50% {
-    box-shadow: 0 0 16px -2px var(--blood);
-  }
-}
-
 .record {
   font-size: 14px;
   color: var(--bone-dim);

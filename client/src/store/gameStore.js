@@ -86,8 +86,14 @@ function statValue(s, stat) {
       return s.totalPrestiges;
     case 'totalPulls':
       return s.totalPulls;
+    case 'totalTranscends':
+      return s.totalTranscends;
+    case 'realm':
+      return s.realm;
     case 'ownedArtifacts':
       return ARTIFACTS.filter((a) => (s.artifacts[a.id] ?? 0) > 0).length;
+    case 'ownedRealmArtifacts':
+      return REALM_ARTIFACTS.filter((a) => (s.artifacts[a.id] ?? 0) > 0).length;
     default:
       return s.stats[stat] ?? 0;
   }
@@ -141,14 +147,9 @@ export const useGameStore = create((set, get) => ({
   golden: null, // aktif altın yaratık { id, reward, ttl, x, y } (kayda yazılmaz)
   goldenBuffLeft: 0, // Altın Coşkusu buff süresi (sn)
   combo: 0, // ardışık hızlı klik sayacı (geçici)
-  opMode: false, // test modu: klik hasarı 1Qi (kayda yazılmaz)
 
   setBuyAmount(amount) {
     set({ buyAmount: amount });
-  },
-
-  toggleOp() {
-    set({ opMode: !get().opMode });
   },
 
   toggleMuted() {
@@ -174,7 +175,7 @@ export const useGameStore = create((set, get) => ({
   clickAttack() {
     const s = get();
     if (!s.enemy || !s.loaded) return null;
-    let dmg = s.opMode ? 1e300 : clickDamage(s.heroLevel, s.prestigeLevels, s.artifacts, achCount(s), s.stardustLevels);
+    let dmg = clickDamage(s.heroLevel, s.prestigeLevels, s.artifacts, achCount(s), s.stardustLevels);
     if (skillActive(s, 'ofke')) dmg *= 5;
     if (s.goldenBuffLeft > 0) dmg *= 7;
     // Kombo: 1.2sn içinde ardışık klik çarpanı büyütür (maks +%100)
@@ -349,7 +350,6 @@ export const useGameStore = create((set, get) => ({
     gmult *= npcPassiveBonus(s.npcLevels).goldMult;
     if (skillActive(s, 'altinYagmuru')) gmult *= 3;
     if (s.goldenBuffLeft > 0) gmult *= 3;
-    if (s.opMode) gmult *= 1000;
     if (s.enemy.kind === 'boss') {
       const reward = bossGold(s.stage) * gmult * (s.enemy.goldMult ?? 1);
       // Bölge Sıçraması: boss aşırı hasarla ölürse ekstra bölge atla
@@ -627,7 +627,7 @@ export const useGameStore = create((set, get) => ({
   // ---- Prestij ----
   doPrestige() {
     const s = get();
-    const gain = crystalGain(s.runHighestStage, s.artifacts, s.stardustLevels) * (s.opMode ? 1000 : 1);
+    const gain = crystalGain(s.runHighestStage, s.artifacts, s.stardustLevels);
     if (gain <= 0) return;
     sfx.prestige();
     set({
@@ -641,7 +641,7 @@ export const useGameStore = create((set, get) => ({
   doTranscend() {
     const s = get();
     if (s.highestStage < TRANSCEND_STAGE) return;
-    const gain = transcendGain(s.crystals) * (s.opMode ? 1000 : 1);
+    const gain = transcendGain(s.crystals);
     if (gain <= 0) return;
     sfx.prestige();
     // Koşu + kristal + prestij upgrade'leri sıfırlanır; artifact/başarım/stardust korunur
@@ -659,7 +659,7 @@ export const useGameStore = create((set, get) => ({
   doRealmShift() {
     const s = get();
     if (s.highestStage < REALM_STAGE) return;
-    const gain = essenceGain(s.stardust) * (s.opMode ? 1000 : 1);
+    const gain = essenceGain(s.stardust);
     if (gain <= 0) return;
     sfx.prestige();
     const realm = s.realm + 1;
@@ -859,13 +859,13 @@ export const selectors = {
   totalDps: (s) => totalDps(s.npcLevels, s.prestigeLevels, s.artifacts, achCount(s), s.stardustLevels) * npcPassiveBonus(s.npcLevels).dmgMult,
   critChance: (s) => critChance(s.heroUpgrades, s.artifacts) + npcPassiveBonus(s.npcLevels).critChance,
   critMultiplier: (s) => critMultiplier(s.heroUpgrades, s.artifacts) + npcPassiveBonus(s.npcLevels).critMult,
-  crystalGain: (s) => crystalGain(s.runHighestStage, s.artifacts, s.stardustLevels) * (s.opMode ? 1000 : 1),
+  crystalGain: (s) => crystalGain(s.runHighestStage, s.artifacts, s.stardustLevels),
   prestigeUnlocked: (s) => s.highestStage >= PRESTIGE_STAGE,
   canPrestige: (s) => s.runHighestStage >= PRESTIGE_STAGE,
   transcendUnlocked: (s) => s.highestStage >= TRANSCEND_STAGE,
-  transcendGain: (s) => transcendGain(s.crystals) * (s.opMode ? 1000 : 1),
+  transcendGain: (s) => transcendGain(s.crystals),
   realmUnlocked: (s) => s.highestStage >= REALM_STAGE,
-  essenceGain: (s) => essenceGain(s.stardust) * (s.opMode ? 1000 : 1),
+  essenceGain: (s) => essenceGain(s.stardust),
   achievementCount: (s) => achCount(s),
   claimableAchievements: (s) =>
     ACHIEVEMENTS.filter((a) => !s.achievements[a.id] && statValue(s, a.stat) >= a.threshold).length,
