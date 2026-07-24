@@ -1,4 +1,4 @@
-# Solo Fan Idle
+# Incrementaloth
 
 A fantasy clicker / idle / incremental game. Click to slay creatures, hire companions
 that fight for you, and climb an endless ladder of regions through **three prestige
@@ -24,19 +24,18 @@ backup from Settings before clearing site data or switching devices.
 
 ```bash
 npm install
-npm run dev        # client (Vite) at http://localhost:5173
+npm run dev        # Vite dev server at http://localhost:5173
 ```
 
-The `server/` folder (Express + PGlite) is optional and only used for local experiments —
-the game itself does not need it.
+The shipped game is fully client-side. (`server/` holds an optional Express + PGlite
+save-sync experiment and is not part of the build.)
 
-## Build & deploy
+## Build
 
 ```bash
-npm run build -w client   # static output in client/dist/
+npm run build -w client   # static site in client/dist/
 ```
 
-Pushing to `main` auto-builds and deploys to **GitHub Pages** via
-[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml). Enable it once under
-**Settings → Pages → Source: GitHub Actions**. The Vite `base` is `./` (relative paths),
-so it works from a project subpath.
+Any static host works. The included [GitHub Actions workflow](.github/workflows/deploy.yml)
+publishes `client/dist` to GitHub Pages on every push to `main`. Vite's `base` is `./`
+(relative paths), so it runs from a project subpath.

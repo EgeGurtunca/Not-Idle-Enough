@@ -17,7 +17,7 @@ export default function TopBar() {
 
   return (
     <header className="topbar">
-      <h1 className="logo">Solo Fan Idle</h1>
+      <h1 className="logo">Incrementaloth</h1>
       <div className="chips">
         <span className="chip chip-gold" title={t('tip_gold')}>
           🪙 {fmt(gold)}

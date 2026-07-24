@@ -1,4 +1,4 @@
-# Solo Fan Idle — Development Roadmap
+# Incrementaloth — Development Roadmap
 
 ![[Roadmap.base]]
 

@@ -5,7 +5,8 @@ import {
 import { useGameStore } from '../store/gameStore.js';
 
 // Kayıt tamamen tarayıcıda (localStorage) tutulur — statik hosting (GitHub Pages) için sunucu yok.
-const SAVE_KEY = 'solo-fan-idle-save';
+const SAVE_KEY = 'incrementaloth-save';
+const LEGACY_SAVE_KEY = 'solo-fan-idle-save'; // eski isimdeki kaydı otomatik taşı
 
 // Çevrimdışı kazanç: mevcut stage yaratıklarını DPS ile kesme hızına göre altın
 function computeOffline(data, savedAt) {
@@ -35,7 +36,7 @@ export function loadGame() {
   const store = useGameStore.getState();
   let raw;
   try {
-    raw = localStorage.getItem(SAVE_KEY);
+    raw = localStorage.getItem(SAVE_KEY) ?? localStorage.getItem(LEGACY_SAVE_KEY);
   } catch {
     raw = null; // gizli mod / localStorage kapalı
   }
