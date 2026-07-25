@@ -1,12 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useGameStore, selectors } from '../store/gameStore.js';
 import { zoneName, zoneTheme, NPCS, SKILLS } from '../game/constants.js';
 import { isBossStage, bossTime, killsRequired } from '../game/formulas.js';
 import { useT, zoneNameL, bossNameL } from '../game/i18n.js';
 import { fmt } from '../utils/format.js';
 import { sfx } from '../game/audio.js';
-import CreatureCanvas from './CreatureCanvas.jsx';
 import ZoneScene from './ZoneScene.jsx';
+
+// Three.js kendi parçasına ayrılır: arayüz anında boyanır, yaratık hemen ardından gelir.
+const CreatureCanvas = lazy(() => import('./CreatureCanvas.jsx'));
 
 function SkillBar() {
   const skillState = useGameStore((s) => s.skillState);
@@ -251,7 +253,9 @@ export default function BattleArea() {
         onPointerDown={onHit}
         aria-label={t('attack')}
       >
-        <CreatureCanvas enemy={enemy} hitId={hitId} stage={stage} />
+        <Suspense fallback={null}>
+          <CreatureCanvas enemy={enemy} hitId={hitId} stage={stage} />
+        </Suspense>
       </button>
 
       <div className="hpbar">
