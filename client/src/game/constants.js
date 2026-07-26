@@ -9,10 +9,22 @@ export const MAX_STAGE = 500; // (artık sert sınır değil — stage sonsuz; 5
 export const OFFLINE_CAP_HOURS = 10;
 export const AUTOSAVE_MS = 20000;
 
+// ---- Katman kazanç eğrileri (tempo ayarının ana kolları) ----
+// Prestij: kristal = CRYSTAL_GAIN_BASE * ((run-90)/10)^CRYSTAL_GAIN_EXP
+export const CRYSTAL_GAIN_BASE = 20;
+export const CRYSTAL_GAIN_EXP = 2.0;
+// Aşkınlık: yıldız tozu = STARDUST_GAIN_BASE * sqrt(kristal / STARDUST_GAIN_DIV)
+export const TRANSCEND_MIN_CRYSTALS = 30;
+export const STARDUST_GAIN_BASE = 40;
+export const STARDUST_GAIN_DIV = 2000;
+// Diyar: öz = ESSENCE_GAIN_BASE * sqrt(toz / ESSENCE_THRESHOLD), en az ESSENCE_THRESHOLD toz
+export const ESSENCE_THRESHOLD = 1200;
+export const ESSENCE_GAIN_BASE = 3;
+
 // Yaratık
 export const CREATURE_BASE_HP = 10;
 export const HP_GROWTH = 1.5; // her stage HP çarpanı
-export const GOLD_DIVISOR = 6; // altın = HP / 6
+export const GOLD_DIVISOR = 700; // altın = HP / 6
 // ---- Boss modifiye'leri ----
 // Boss savaşlarına taktik katar. hpMult/goldMult/timeMult başta uygulanır;
 // dpsMult = NPC hasarının geçen oranı (zırhlı düşük), drainMult = süre akış hızı.
@@ -36,13 +48,13 @@ export const BOSS_GOLD_MULT = 34;
 
 // Kahraman (klik)
 export const HERO_BASE_COST = 4;
-export const HERO_COST_GROWTH = 1.056;
+export const HERO_COST_GROWTH = 1.0525;
 export const MILESTONE_EVERY = 15; // her 15 seviyede hasar x2
 export const MILESTONE_MULT = 2;
 
 // NPC seviye maliyeti: unlockCost * NPC_LEVEL_COST_FACTOR * NPC_COST_GROWTH^seviye
 export const NPC_LEVEL_COST_FACTOR = 0.075;
-export const NPC_COST_GROWTH = 1.056;
+export const NPC_COST_GROWTH = 1.0525;
 
 // ---- Kahraman upgrade'leri (altınla, prestijde sıfırlanır) ----
 export const HERO_UPGRADES = [
@@ -182,17 +194,17 @@ export const PRESTIGE_UPGRADES = [
   {
     id: 'keskinVurus', name: 'Keskin Vuruş', emoji: '💥',
     desc: 'Klik hasarı +%50 (seviye başına)',
-    baseCost: 10, costGrowth: 2, maxLevel: Infinity,
+    baseCost: 10, costGrowth: 1.7, maxLevel: Infinity,
   },
   {
     id: 'komutanlik', name: 'Komutanlık', emoji: '🚩',
     desc: 'NPC hasarı +%50 (seviye başına)',
-    baseCost: 10, costGrowth: 2, maxLevel: Infinity,
+    baseCost: 10, costGrowth: 1.7, maxLevel: Infinity,
   },
   {
     id: 'altinDokunus', name: 'Altın Dokunuş', emoji: '🪙',
     desc: 'Altın kazancı +%35 (seviye başına)',
-    baseCost: 15, costGrowth: 2, maxLevel: Infinity,
+    baseCost: 15, costGrowth: 1.7, maxLevel: Infinity,
   },
   {
     id: 'zamanBukucu', name: 'Zaman Bükücü', emoji: '⏱️',
@@ -260,7 +272,7 @@ export const STARDUST_UPGRADES = [
     // olduğundan DPS büyümesi HP'yi geçer ve Bölge 1000 (Diyar) ulaşılabilir olur.
     id: 'yildizYarigi', name: 'Yıldız Yarığı', emoji: '🌠',
     desc: 'Kilometre taşı aralığı −1 (hasar ×2 daha sık gelir)',
-    baseCost: 1500, costGrowth: 6, maxLevel: 3,
+    baseCost: 120, costGrowth: 5, maxLevel: 3,
   },
 ];
 

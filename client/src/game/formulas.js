@@ -8,6 +8,8 @@ import {
   ARTIFACTS, ALL_ARTIFACTS, RARITIES, ARTIFACT_MAX_LEVEL, PULL_COST_BASE, PULL_COST_GROWTH,
   ARTIFACT_UPGRADE_BASE, ARTIFACT_UPGRADE_GROWTH, ACHIEVEMENT_BONUS,
   REALM_PULL_COST_BASE, REALM_PULL_COST_GROWTH, REALM_ARTIFACT_UPGRADE_MULT,
+  CRYSTAL_GAIN_BASE, CRYSTAL_GAIN_EXP, TRANSCEND_MIN_CRYSTALS,
+  STARDUST_GAIN_BASE, STARDUST_GAIN_DIV, ESSENCE_THRESHOLD, ESSENCE_GAIN_BASE,
 } from './constants.js';
 
 // Başarım çarpanı: açılan her başarım hasarı ve altını %2 artırır
@@ -160,7 +162,8 @@ export function crystalGain(runHighestStage, artifacts = {}, sd = {}) {
   if (runHighestStage < PRESTIGE_STAGE) return 0;
   const art = artifactBonuses(artifacts);
   return Math.floor(
-    20 * Math.pow((runHighestStage - 90) / 10, 2.2) * (1 + art.crystal) * stardustCrystalMult(sd)
+    CRYSTAL_GAIN_BASE * Math.pow((runHighestStage - 90) / 10, CRYSTAL_GAIN_EXP) *
+      (1 + art.crystal) * stardustCrystalMult(sd)
   );
 }
 
@@ -208,8 +211,8 @@ export function startingGold(prestigeLevels = {}) {
 // ---- Aşkınlık ----
 // Bankadaki kristale göre Yıldız Tozu; her aşkınlık için kristal biriktirmen gerekir.
 export function transcendGain(crystals) {
-  if (crystals < 30) return 0;
-  return Math.floor(8 * Math.sqrt(crystals / 2000));
+  if (crystals < TRANSCEND_MIN_CRYSTALS) return 0;
+  return Math.floor(STARDUST_GAIN_BASE * Math.sqrt(crystals / STARDUST_GAIN_DIV));
 }
 
 export function stardustUpgradeCost(upgrade, level) {
@@ -224,8 +227,8 @@ export function startingCrystals(stardustLevels = {}) {
 // ---- Diyar Geçişi ----
 // Bankadaki Yıldız Tozu'na göre Öz; her geçiş için toz biriktirmen gerekir.
 export function essenceGain(stardust) {
-  if (stardust < 20000) return 0;
-  return Math.floor(3 * Math.sqrt(stardust / 20000));
+  if (stardust < ESSENCE_THRESHOLD) return 0;
+  return Math.floor(ESSENCE_GAIN_BASE * Math.sqrt(stardust / ESSENCE_THRESHOLD));
 }
 
 export function essenceUpgradeCost(upgrade, level) {
