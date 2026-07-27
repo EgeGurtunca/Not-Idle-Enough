@@ -1,5 +1,5 @@
 import {
-  CREATURE_BASE_HP, HP_GROWTH, GOLD_DIVISOR,
+  CREATURE_BASE_HP, HP_GROWTH, HP_RAMP_STAGE, HP_GROWTH_LATE, GOLD_DIVISOR,
   MINIBOSS_HP_MULT, MINIBOSS_GOLD_MULT, BOSS_HP_MULT, BOSS_GOLD_MULT,
   HERO_BASE_COST, HERO_COST_GROWTH, MILESTONE_EVERY, MILESTONE_MULT,
   NPC_LEVEL_COST_FACTOR, NPC_COST_GROWTH,
@@ -50,7 +50,11 @@ export function artifactBonuses(artifacts = {}) {
 }
 
 // ---- Düşman ----
-export const creatureHp = (stage) => CREATURE_BASE_HP * Math.pow(HP_GROWTH, stage - 1);
+export const creatureHp = (stage) => {
+  const early = Math.min(stage, HP_RAMP_STAGE);
+  const late = Math.max(0, stage - HP_RAMP_STAGE);
+  return CREATURE_BASE_HP * Math.pow(HP_GROWTH, early - 1) * Math.pow(HP_GROWTH_LATE, late);
+};
 export const creatureGold = (stage) => Math.max(1, creatureHp(stage) / GOLD_DIVISOR);
 export const bossHp = (stage) =>
   creatureHp(stage) * (isBossStage(stage) ? BOSS_HP_MULT : MINIBOSS_HP_MULT);

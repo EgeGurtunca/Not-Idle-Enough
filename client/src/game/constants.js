@@ -18,12 +18,16 @@ export const TRANSCEND_MIN_CRYSTALS = 30;
 export const STARDUST_GAIN_BASE = 40;
 export const STARDUST_GAIN_DIV = 2000;
 // Diyar: öz = ESSENCE_GAIN_BASE * sqrt(toz / ESSENCE_THRESHOLD), en az ESSENCE_THRESHOLD toz
-export const ESSENCE_THRESHOLD = 1200;
+export const ESSENCE_THRESHOLD = 800;
 export const ESSENCE_GAIN_BASE = 3;
 
 // Yaratık
 export const CREATURE_BASE_HP = 10;
-export const HP_GROWTH = 1.5; // her stage HP çarpanı
+export const HP_GROWTH = 1.5; // her stage HP çarpanı (Bölge 1..HP_RAMP_STAGE)
+// Zorluk rampası: ilk prestijden sonra bölgeler kademeli sertleşir; 0→100 temposu korunur,
+// 100→500 uzar. (Altın da HP'ye bağlı olduğundan gelir aynı oranda artar.)
+export const HP_RAMP_STAGE = 100;
+export const HP_GROWTH_LATE = 1.521;
 export const GOLD_DIVISOR = 700; // altın = HP / 6
 // ---- Boss modifiye'leri ----
 // Boss savaşlarına taktik katar. hpMult/goldMult/timeMult başta uygulanır;
