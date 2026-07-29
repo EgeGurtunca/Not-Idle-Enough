@@ -84,6 +84,7 @@ export const STR = {
     realm_hint: 'Bank at least 💫 20K Stardust (by ascending) to shift realms. Now: 💫 {n}',
     realm_effect: 'Realm {r} — permanent realm bonus: all damage & gold ×{b}',
     toast_leap: '🐇 Colossal blow! Leaped {n} extra region(s) → Region {s}',
+    toast_realm_ceiling: '🌀 Region {n} — this realm can hold you no longer. Shift realms to go further.',
     // Achievements panel
     ach_summary: '🏆 {c}/{t} achievements · ',
     ach_bonus: '+{p}% damage and +{p}% gold',
@@ -196,6 +197,7 @@ export const STR = {
     realm_hint: 'Diyar değiştirmek için en az 💫 20K Yıldız Tozu biriktir (aşkınlaşarak). Şu an: 💫 {n}',
     realm_effect: 'Diyar {r} — kalıcı diyar bonusu: tüm hasar ve altın ×{b}',
     toast_leap: '🐇 Muazzam darbe! {n} ekstra bölge atlandı → Bölge {s}',
+    toast_realm_ceiling: '🌀 Bölge {n} — bu diyar seni artık taşıyamıyor. Daha ileri gitmek için diyar değiştir.',
     ach_summary: '🏆 {c}/{t} başarım · ',
     ach_bonus: '+%{p} hasar ve +%{p} altın',
     st_kills: '🗡️ Kesilen yaratık: {n}', st_boss: '👹 Kesilen boss: {n}',

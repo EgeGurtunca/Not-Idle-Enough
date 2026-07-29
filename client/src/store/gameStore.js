@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import {
-  PRESTIGE_STAGE, TRANSCEND_STAGE, REALM_STAGE, NPCS, PRESTIGE_UPGRADES, HERO_UPGRADES,
+  PRESTIGE_STAGE, TRANSCEND_STAGE, REALM_STAGE, REALM_CEILING, NPCS, PRESTIGE_UPGRADES, HERO_UPGRADES,
   STARDUST_UPGRADES, ESSENCE_UPGRADES, ARTIFACTS, REALM_ARTIFACTS, ALL_ARTIFACTS,
   ARTIFACT_MAX_LEVEL, SKILLS, ACHIEVEMENTS, MILESTONES,
   creatureType, bossName, rollBossModifier, npcPassiveBonus,
@@ -354,7 +354,8 @@ export const useGameStore = create((set, get) => ({
       const reward = bossGold(s.stage) * gmult * (s.enemy.goldMult ?? 1);
       // Bölge Sıçraması: boss aşırı hasarla ölürse ekstra bölge atla
       const leap = stageLeap(amount / (s.enemy.maxHp || 1), s.essenceLevels.bolgeSicramasi ?? 0);
-      const nextStage = s.stage + 1 + leap; // 500 sonrası sonsuz (float tavanına kadar)
+      // Diyar tavanı: bunun ötesinde sayılar JS sınırını aşıyor — ilerlemek için diyar değiştir
+      const nextStage = Math.min(REALM_CEILING, s.stage + 1 + leap);
       sfx.bossWin();
       set({
         gold: s.gold + reward,
@@ -371,7 +372,9 @@ export const useGameStore = create((set, get) => ({
         bossTimeLeft: 0,
         enemy: makeCreature(nextStage),
       });
-      if (leap > 0) {
+      if (nextStage === s.stage) {
+        get()._showToast(translate(s.lang, 'toast_realm_ceiling', { n: REALM_CEILING }));
+      } else if (leap > 0) {
         get()._showToast(translate(s.lang, 'toast_leap', { n: leap, s: nextStage }));
       }
     } else {
@@ -805,7 +808,7 @@ export const useGameStore = create((set, get) => ({
   },
 
   loadSaveData(data, offlineReport) {
-    const stage = Math.max(1, data.stage ?? 1);
+    const stage = Math.min(REALM_CEILING, Math.max(1, data.stage ?? 1));
     setMuted(data.muted ?? false);
     setRealmBoost(data.realm ?? 1, data.essenceLevels ?? {});
     set({
