@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Incrementaloth">
+  <defs>
+    <radialGradient id="mglow" cx="50%" cy="45%" r="60%">
+      <stop offset="0%" stop-color="#2c2840" />
+      <stop offset="100%" stop-color="#120f1c" />
+    </radialGradient>
+    <linearGradient id="mblade" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#8d8571" />
+      <stop offset="55%" stop-color="#e8e0ce" />
+      <stop offset="100%" stop-color="#ffffff" />
+    </linearGradient>
+    <linearGradient id="member" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffc25e" />
+      <stop offset="100%" stop-color="#c97f1e" />
+    </linearGradient>
+  </defs>
+  <!-- maskable: tüm tuval dolu, içerik merkezdeki %80 güvenli alanda -->
+  <rect width="512" height="512" fill="url(#mglow)" />
+  <g transform="translate(256 256) scale(0.62) translate(-256 -256)">
+    <circle cx="256" cy="256" r="150" fill="none" stroke="#f0a83c" stroke-opacity="0.28" stroke-width="12" />
+    <path d="M256 92 L286 150 L286 320 L226 320 L226 150 Z" fill="url(#mblade)" />
+    <rect x="182" y="320" width="148" height="26" rx="10" fill="url(#member)" />
+    <rect x="240" y="346" width="32" height="72" rx="12" fill="#6b5433" />
+    <circle cx="256" cy="430" r="20" fill="url(#member)" />
+  </g>
+</svg>

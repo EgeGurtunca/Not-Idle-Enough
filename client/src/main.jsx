@@ -5,6 +5,13 @@ import './styles.css';
 
 createRoot(document.getElementById('root')).render(<App />);
 
+// Çevrimdışı oynanabilirlik (yalnızca yayın derlemesinde; dev'de önbellek karışıklığı olmasın)
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+
 // Geliştirme yardımcıları: konsoldan __dev.gold(1e9), __dev.stage(100) vb.
 if (import.meta.env.DEV) {
   window.__dev = {
