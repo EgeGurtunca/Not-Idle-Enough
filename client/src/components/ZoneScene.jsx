@@ -1,8 +1,8 @@
 import { useGameStore } from '../store/gameStore.js';
+import { tierIndex, loopIndex } from '../game/constants.js';
 
 // Bölgeye göre arka plan manzarası — arenayı dolduran, atmosferik SVG sahneleri (resim yok).
 // Her 10 bölgede değişir. Yaratığın arkasında; ortada karartıcı vinyet ile yaratık öne çıkar.
-const tierOf = (stage) => Math.floor((stage - 1) / 10) % 8;
 
 // Her dilim: gökyüzü gradyanı (üst→alt) + uzak/yakın silüet renkleri + vurgu
 const ZONES = [
@@ -14,6 +14,10 @@ const ZONES = [
   { sky: ['#331a44', '#120a1c'], far: '#281338', near: '#100a1c', accent: '#c77bea' }, // Saray
   { sky: ['#2a3556', '#0e1424'], far: '#1c2640', near: '#0c1120', accent: '#8ea6d6' }, // Dağlar
   { sky: ['#2e1512', '#0a0605', '#1e0d0a'], far: '#24100d', near: '#0e0605', accent: '#ff7a3c' }, // Ejder İni / Mağara
+  { sky: ['#16323a', '#08151a'], far: '#123039', near: '#08171d', accent: '#6fd8e0' }, // Kristal Mağaraları
+  { sky: ['#2a3d5e', '#101a2c'], far: '#1e2f4a', near: '#0d1524', accent: '#9fc4ff' }, // Gökyüzü Harabeleri
+  { sky: ['#3a2418', '#140b06', '#2a1810'], far: '#2c1a10', near: '#140c07', accent: '#d8703c' }, // Küller Diyarı
+  { sky: ['#1c1030', '#080414'], far: '#170c28', near: '#0a0616', accent: '#a05cf0' }, // Boşluk Eşiği
 ];
 
 function scene(tier, z) {
@@ -97,23 +101,86 @@ function scene(tier, z) {
           <ellipse fill="#ffd27a" opacity="0.4" cx="60" cy="80" rx="42" ry="5" />
         </>
       );
+    case 8: // Kristal Mağaraları — tavandan ve tabandan kristal sütunlar, parıltı
+      return (
+        <>
+          <g fill={z.far}>
+            <path d="M0,0 L6,26 L14,0 Z M20,0 L28,34 L36,0 Z M48,0 L54,22 L62,0 Z M76,0 L84,30 L92,0 Z M104,0 L110,24 L118,0 Z" />
+          </g>
+          <g fill={z.accent} opacity="0.5">
+            <path d="M10,80 L16,44 L22,80 Z M40,80 L48,38 L56,80 Z M70,80 L76,50 L82,80 Z M94,80 L102,42 L110,80 Z" />
+          </g>
+          <g fill={z.near}>
+            <path d="M0,80 L0,66 L18,58 L38,68 L58,56 L80,66 L104,58 L120,68 L120,80 Z" />
+          </g>
+          <g fill="#ffffff" opacity="0.55">
+            <circle cx="48" cy="40" r="1.2" /><circle cx="102" cy="45" r="1" /><circle cx="16" cy="47" r="0.9" />
+          </g>
+        </>
+      );
+    case 9: // Gökyüzü Harabeleri — bulutlar, yüzen adalar, kırık sütunlar
+      return (
+        <>
+          <g fill={z.accent} opacity="0.16">
+            <ellipse cx="24" cy="20" rx="20" ry="6" /><ellipse cx="88" cy="14" rx="24" ry="5" />
+            <ellipse cx="58" cy="30" rx="16" ry="4" />
+          </g>
+          <g fill={z.far}>
+            <path d="M8,44 L34,44 L28,54 L14,54 Z" />
+            <path d="M74,38 L106,38 L100,50 L80,50 Z" />
+            <rect x="14" y="30" width="4" height="14" /><rect x="24" y="26" width="4" height="18" />
+            <rect x="84" y="22" width="4" height="16" /><rect x="94" y="27" width="4" height="11" />
+          </g>
+          <path fill={z.near} d="M0,80 L0,62 L22,56 L46,64 L70,54 L96,62 L120,56 L120,80 Z" />
+        </>
+      );
+    case 10: // Küller Diyarı — kül tepeleri, yanan çatlaklar, düşen korlar
+      return (
+        <>
+          <path fill={z.far} d="M0,80 L0,50 L20,40 L42,52 L64,38 L88,50 L108,42 L120,52 L120,80 Z" />
+          <g stroke={z.accent} strokeWidth="1.6" opacity="0.75" fill="none">
+            <path d="M12,74 L22,64 L30,70" /><path d="M52,76 L62,66 L72,72" /><path d="M88,74 L96,66 L106,71" />
+          </g>
+          <path fill={z.near} d="M0,80 L0,66 L26,60 L54,68 L82,60 L110,66 L120,62 L120,80 Z" />
+          <g fill="#ffc25e" opacity="0.6">
+            <circle cx="30" cy="28" r="1" /><circle cx="66" cy="20" r="0.8" /><circle cx="96" cy="32" r="1.1" />
+            <circle cx="14" cy="36" r="0.7" /><circle cx="80" cy="40" r="0.9" />
+          </g>
+        </>
+      );
+    case 11: // Boşluk Eşiği — yarık, yüzen enkaz, yıldızsız karanlık
+      return (
+        <>
+          <ellipse cx="60" cy="36" rx="26" ry="30" fill={z.accent} opacity="0.16" />
+          <ellipse cx="60" cy="36" rx="15" ry="20" fill={z.accent} opacity="0.26" />
+          <ellipse cx="60" cy="36" rx="6" ry="11" fill="#0a0616" />
+          <g fill={z.far}>
+            <path d="M18,30 L26,26 L30,34 L20,38 Z" /><path d="M92,22 L102,20 L104,29 L94,31 Z" />
+            <path d="M34,54 L42,50 L46,58 L36,60 Z" /><path d="M84,52 L94,49 L96,57 L86,59 Z" />
+          </g>
+          <path fill={z.near} d="M0,80 L0,64 L24,70 L50,62 L74,70 L98,62 L120,68 L120,80 Z" />
+        </>
+      );
     default:
       return null;
   }
 }
 
 export default function ZoneScene({ stage }) {
-  const tier = tierOf(stage);
+  const tier = tierIndex(stage);
+  const loop = loopIndex(stage);
   const realm = useGameStore((s) => s.realm);
   const z = ZONES[tier];
   const sky = z.sky;
+  // Her diyar aynı manzarayı başka bir renk evreninde gösterir; her tam tur da
+  // atmosferi biraz daha kaydırıp soldurur — aynı sahne derinleştikçe yabancılaşır.
+  const hue = (realm - 1) * 45 + loop * 18;
+  const filter =
+    hue || loop
+      ? `hue-rotate(${hue}deg) saturate(${Math.max(0.55, 1 - loop * 0.06)}) brightness(${Math.max(0.7, 1 - loop * 0.04)})`
+      : undefined;
   return (
-    <div
-      className="zone-scene"
-      key={tier}
-      // Her diyar aynı manzarayı başka bir renk evreninde gösterir
-      style={realm > 1 ? { filter: `hue-rotate(${(realm - 1) * 45}deg)` } : undefined}
-    >
+    <div className="zone-scene" key={`${tier}-${loop}`} style={filter ? { filter } : undefined}>
       <svg viewBox="0 0 120 80" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
         <defs>
           <linearGradient id={`sky${tier}`} x1="0" y1="0" x2="0" y2="1">

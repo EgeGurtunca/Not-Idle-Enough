@@ -1,6 +1,7 @@
 // Basit i18n: kütüphane yok. Türkçe metinler kodda olduğu gibi kalır (fallback),
 // İngilizce burada. Varsayılan dil 'en'. lang gameStore'da tutulur, kayda yazılır.
 import { useGameStore } from '../store/gameStore.js';
+import { tierIndex, TIER_COUNT, loopPrefix, withPrefix } from './constants.js';
 
 // ---- Arayüz metinleri (en + tr). {x} = interpolasyon. ----
 export const STR = {
@@ -241,9 +242,13 @@ export const STR = {
 export const EN = {
   npc: { okcu: 'Archer', sovalye: 'Knight', buyucu: 'Wizard', haydut: 'Rogue', rahip: 'War Priest', ejderavci: 'Dragon Hunter', suikastci: 'Shadow Assassin', firtina: 'Storm Caller', ates: 'Fire Dancer', buz: 'Ice Queen', ent: 'Ancient Ent', zaman: 'Time Keeper' },
   npcPassive: { okcu: '+8% crit chance', sovalye: '+15% all damage', buyucu: '+20% gold', haydut: '+50% crit damage', rahip: '+20% all damage', ejderavci: '+30% gold', suikastci: '+10% crit chance', firtina: '+30% all damage', ates: '+75% crit damage', buz: '+40% gold', ent: '+40% all damage', zaman: '+50% gold' },
-  creature: { fare: 'Sewer Rat', yarasa: 'Vampire Bat', yilan: 'Venom Snake', kurt: 'Hungry Wolf', domuz: 'Wild Boar', orumcek: 'Giant Spider', goblin: 'Goblin', trol: 'Cave Troll', tilki: 'Trickster Fox', iskelet: 'Skeleton Warrior', zombi: 'Zombie', hortlak: 'Wraith', akrep: 'Giant Scorpion', kertenkele: 'Lizard Warrior', timsah: 'Swamp Croc', vampir: 'Vampire Count', kurtadam: 'Werewolf', cadi: 'Dark Witch', dev: 'Mountain Giant', golem: 'Stone Golem', sahin: 'Crimson Hawk', wyvern: 'Young Wyvern', kadimejder: 'Ancient Dragon', rex: 'Bony Rex' },
-  zone: ['Rotten Sewers', 'Howling Forest', 'Goblin Pass', 'Bone Pit', 'Toxic Swamp', 'Cursed Palace', 'Stone Giants Plateau', 'Dragon Lair'],
-  boss: ['Sewer Overlord', 'Alpha Wolf', 'Goblin King', 'Bone Lord', 'Swamp Horror', 'Dark Count', 'Stone King', 'Ancient Dragon'],
+  creature: { fare: 'Sewer Rat', yarasa: 'Vampire Bat', yilan: 'Venom Snake', kurt: 'Hungry Wolf', domuz: 'Wild Boar', orumcek: 'Giant Spider', goblin: 'Goblin', trol: 'Cave Troll', tilki: 'Trickster Fox', iskelet: 'Skeleton Warrior', zombi: 'Zombie', hortlak: 'Wraith', akrep: 'Giant Scorpion', kertenkele: 'Lizard Warrior', timsah: 'Swamp Croc', vampir: 'Vampire Count', kurtadam: 'Werewolf', cadi: 'Dark Witch', dev: 'Mountain Giant', golem: 'Stone Golem', sahin: 'Crimson Hawk', wyvern: 'Young Wyvern', kadimejder: 'Ancient Dragon', rex: 'Bony Rex',
+    kristalOrumcek: 'Crystal Spider', prizmaGolem: 'Prism Golem', yankiHortlagi: 'Echo Wraith',
+    firtinaKartali: 'Storm Eagle', tasBekci: 'Stone Sentinel', gokYilani: 'Sky Serpent',
+    kulKurdu: 'Ash Wolf', magmaDevi: 'Magma Giant', korAkrep: 'Ember Scorpion',
+    bosluktanGelen: 'Void Walker', hicYilani: 'Null Serpent', sonsuzGoz: 'Eternal Eye' },
+  zone: ['Rotten Sewers', 'Howling Forest', 'Goblin Pass', 'Bone Pit', 'Toxic Swamp', 'Cursed Palace', 'Stone Giants Plateau', 'Dragon Lair', 'Crystal Caverns', 'Sky Ruins', 'Ashen Realm', 'Void Threshold'],
+  boss: ['Sewer Overlord', 'Alpha Wolf', 'Goblin King', 'Bone Lord', 'Swamp Horror', 'Dark Count', 'Stone King', 'Ancient Dragon', 'Crystal Queen', 'Sky Warden', 'Ash Sovereign', 'Void Lord'],
   mod: { zirhli: ['Armored', 'Resists NPC damage — your clicks matter!'], aceleci: ['Hasty', 'Short timer but low HP'], hazineci: ['Treasure', 'Very tanky but five times the reward'], ofkeli: ['Enraged', 'Timer drains faster'] },
   skill: { ofke: ['Rage', 'Click damage ×5'], altinYagmuru: ['Gold Rain', 'Gold gain ×3'], zamanDonmasi: ['Time Freeze', 'Boss timer freezes'], savasEmri: ['War Cry', 'NPC damage ×3'] },
   heroUp: { kritSans: ['Crit Chance', 'Crit chance on clicks +1% (per level)'], kritHasar: ['Crit Damage', 'Crit multiplier +10% (base ×2)'], altinBereketi: ['Golden Bounty', 'All gold gain +5% (per level)'] },
@@ -302,13 +307,26 @@ export function dnd(lang, kind, id, trName, trDesc) {
   }
   return { name: trName, desc: trDesc };
 }
-// dizi (zone/boss) tier'e göre
-const tier = (stage) => Math.floor((stage - 1) / 10) % 8;
+// dizi (zone/boss) tier'e göre — indeks constants'tan gelir, elle "% 8" yazma
 export function zoneNameL(lang, stage, trVal) {
-  return lang === 'en' ? EN.zone[tier(stage)] : trVal;
+  const base = lang === 'en' ? EN.zone[tierIndex(stage)] : trVal;
+  return withPrefix(loopPrefix(lang, stage), base);
 }
 export function bossNameL(lang, stage, trVal) {
-  return lang === 'en' ? EN.boss[Math.floor((stage - 1) / 10) % 8] : trVal;
+  const base = lang === 'en' ? EN.boss[tierIndex(stage)] : trVal;
+  return withPrefix(loopPrefix(lang, stage), base);
+}
+// Yaratık adı: tür çevirisi + tur öneki (düşman etiketi bunu kullanır)
+export function creatureNameL(lang, stage, id, trVal) {
+  return withPrefix(loopPrefix(lang, stage), dn(lang, 'creature', id, trVal));
+}
+
+if (import.meta.env?.DEV) {
+  for (const [name, arr] of Object.entries({ 'EN.zone': EN.zone, 'EN.boss': EN.boss })) {
+    if (arr.length !== TIER_COUNT) {
+      console.error(`[content] ${name} uzunluğu ${arr.length}, TIER_COUNT ${TIER_COUNT} olmalı`);
+    }
+  }
 }
 
 // React hook: lang'e abone olur, bağlı yardımcılar döndürür

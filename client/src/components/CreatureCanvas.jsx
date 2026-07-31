@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { CREATURE_TYPES, zoneTheme } from '../game/constants.js';
+import { CREATURE_TYPES, zoneTheme, loopIndex } from '../game/constants.js';
 
 // Deterministik RNG: aynı düşman hep aynı görünür
 function mulberry32(a) {
@@ -22,13 +22,23 @@ function disposeGroup(group) {
 
 // Yaratık türünün "arch" bayrağı hangi gövde planını çizeceğimizi belirler.
 // Her plan; gövde, kafa, uzuvlar ve türe özel eklentileri (boynuz/kanat/kuyruk…) kurar.
-function buildCreature(enemy) {
+function buildCreature(enemy, loop = 0) {
   const look = CREATURE_TYPES[enemy.typeId]?.look ?? {};
   const rand = mulberry32(enemy.id * 9301 + 49297);
   const isBoss = enemy.kind === 'boss';
   const isBig = isBoss && enemy.big;
 
   const base = new THREE.Color(look.color ?? '#8a7f72');
+  // Tur derinleştikçe aynı tür yabancılaşır: ton kayar, doygunluk düşer, karanlıklaşır.
+  if (loop > 0) {
+    const hsl = {};
+    base.getHSL(hsl);
+    base.setHSL(
+      (hsl.h + loop * 0.055) % 1,
+      Math.max(0.08, hsl.s * (1 - loop * 0.07)),
+      Math.max(0.12, hsl.l * (1 - loop * 0.05))
+    );
+  }
   if (isBig) base.lerp(new THREE.Color('#c8342a'), 0.32);
   else if (isBoss) base.lerp(new THREE.Color('#3a2e52'), 0.22);
   const dark = base.clone().multiplyScalar(0.55);
@@ -426,7 +436,7 @@ export default function CreatureCanvas({ enemy, hitId, stage }) {
       disposeGroup(st.creature);
       st.mats.forEach((m) => m.dispose());
     }
-    const { group, mats } = buildCreature(enemy);
+    const { group, mats } = buildCreature(enemy, loopIndex(stage));
     // nefes animasyonu ana kütlenin başlangıç ölçeğini bozmasın
     if (group.userData.body) {
       group.userData.body.userData.sx0 = group.userData.body.scale.x;

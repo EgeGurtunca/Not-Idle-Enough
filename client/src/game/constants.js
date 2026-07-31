@@ -444,6 +444,26 @@ export const CREATURE_TIERS = [
     { id: 'kadimejder', name: 'Kadim Ejder',       emoji: '🐲', look: { arch: 'flyer', color: '#8f3f3f', shape: 'big', horns: 2, wings: true, tail: 'spike' } },
     { id: 'rex',        name: 'Kemikli Rex',       emoji: '🦖', look: { arch: 'quadruped', color: '#6f9e4f', longBody: true, shape: 'big', snout: 'long', fangs: true, tail: 'spike' } },
   ],
+  [
+    { id: 'kristalOrumcek', name: 'Kristal Örümceği', emoji: '💎', look: { arch: 'bug', color: '#6fd8e0', claws: true, eyes: { count: 6, color: '#b8f7f1' }, glowEyes: '#8ff2ea' } },
+    { id: 'prizmaGolem',    name: 'Prizma Golemi',    emoji: '🔷', look: { arch: 'humanoid', color: '#4fb8c8', shape: 'big', glowEyes: '#b8f7f1' } },
+    { id: 'yankiHortlagi',  name: 'Yankı Hortlağı',   emoji: '🫧', look: { arch: 'ghost', color: '#a8e6ec', translucent: true, glowEyes: '#6fd8e0' } },
+  ],
+  [
+    { id: 'firtinaKartali', name: 'Fırtına Kartalı',  emoji: '🦅', look: { arch: 'flyer', color: '#9fc4ff', wings: true, snout: 'point', glowEyes: '#e8f0ff' } },
+    { id: 'tasBekci',       name: 'Taş Bekçi',        emoji: '🗿', look: { arch: 'humanoid', color: '#8fa3c4', shape: 'big', horns: 2, glowEyes: '#9fc4ff' } },
+    { id: 'gokYilani',      name: 'Gök Yılanı',       emoji: '🐍', look: { arch: 'serpent', color: '#7fb0e8', fangs: true, eyes: { color: '#e8f0ff' } } },
+  ],
+  [
+    { id: 'kulKurdu',   name: 'Kül Kurdu',        emoji: '🐺', look: { arch: 'quadruped', color: '#8a6250', ears: 'point', snout: 'point', tail: 'thin', fangs: true, glowEyes: '#ff7a3c' } },
+    { id: 'magmaDevi',  name: 'Magma Devi',       emoji: '🌋', look: { arch: 'humanoid', color: '#b0512a', shape: 'big', horns: 2, fangs: true, claws: true, glowEyes: '#ffc25e' } },
+    { id: 'korAkrep',   name: 'Kor Akrep',        emoji: '🦂', look: { arch: 'bug', color: '#d8703c', claws: true, stinger: true, glowEyes: '#ffd86b' } },
+  ],
+  [
+    { id: 'bosluktanGelen', name: 'Boşluk Gezgini', emoji: '🌀', look: { arch: 'humanoid', color: '#7b4fd0', translucent: true, claws: true, glowEyes: '#d8b8ff' } },
+    { id: 'hicYilani',      name: 'Hiç Yılanı',     emoji: '🕳️', look: { arch: 'serpent', color: '#4a2a7a', longBody: true, fangs: true, glowEyes: '#c79aff' } },
+    { id: 'sonsuzGoz',      name: 'Sonsuz Göz',     emoji: '👁️', look: { arch: 'ghost', color: '#a05cf0', translucent: true, eyes: { count: 8, color: '#ffffff' }, glowEyes: '#e0c8ff' } },
+  ],
 ];
 
 // id -> tip (CreatureCanvas hızlı erişimi)
@@ -460,6 +480,10 @@ export const ZONE_NAMES = [
   'Lanetli Saray',
   'Taş Devler Yaylası',
   'Ejder İni',
+  'Kristal Mağaraları',
+  'Gökyüzü Harabeleri',
+  'Küller Diyarı',
+  'Boşluk Eşiği',
 ];
 
 // Her dilimin büyük boss adı (bölge temasıyla uyumlu)
@@ -472,11 +496,43 @@ export const BOSS_NAMES = [
   'Karanlık Kont',
   'Taş Kral',
   'Kadim Ejderha',
+  'Kristal Kraliçe',
+  'Gök Bekçisi',
+  'Kül Hükümdarı',
+  'Boşluk Efendisi',
 ];
 
-function tierIndex(stage) {
-  return Math.floor((stage - 1) / 10) % CREATURE_TIERS.length;
+// Bölge dilimi sayısı — isim/tema/yaratık/arka plan dizilerinin HEPSİ bu uzunlukta olmalı.
+// i18n ve ZoneScene de bunu kullanır; elle "% 8" yazmak desenkrona yol açar.
+export const TIER_COUNT = CREATURE_TIERS.length;
+export const STAGES_PER_TIER = 10;
+
+export function tierIndex(stage) {
+  return Math.floor((stage - 1) / STAGES_PER_TIER) % TIER_COUNT;
 }
+
+// Kaç tam tur döndük (her tur TIER_COUNT dilim = TIER_COUNT*10 bölge)
+export function loopIndex(stage) {
+  return Math.floor((stage - 1) / (STAGES_PER_TIER * TIER_COUNT));
+}
+
+// Tur önekleri: bölgeler başa sardıkça isimler derinleşir ("Goblin Geçidi" → "Küllü Goblin Geçidi").
+// İlk tur öneksizdir; sonrasında liste döner. Her ikisi de sıfat olduğundan bölge/boss/yaratık
+// adlarının hepsine takılabilir.
+export const LOOP_PREFIXES = {
+  // "Çürümüş" bilinçli olarak yok: bölge adı "Çürük Lağımlar" ile eşanlamlı çakışıyordu.
+  tr: ['Solgun', 'Batık', 'Küllü', 'Donmuş', 'Perili', 'Gölgeli', 'Ergimiş', 'Kararmış'],
+  en: ['Blighted', 'Sunken', 'Ashen', 'Frozen', 'Haunted', 'Shadowed', 'Molten', 'Darkened'],
+};
+
+export function loopPrefix(lang, stage) {
+  const loop = loopIndex(stage);
+  if (loop <= 0) return '';
+  const list = LOOP_PREFIXES[lang] ?? LOOP_PREFIXES.en;
+  return list[(loop - 1) % list.length];
+}
+
+export const withPrefix = (prefix, name) => (prefix ? `${prefix} ${name}` : name);
 
 // Bölge dilimine göre atmosfer rengi (arena parıltısı + 3B rim ışığı)
 export const ZONE_THEMES = [
@@ -488,6 +544,10 @@ export const ZONE_THEMES = [
   '#b0506a', // Lanetli Saray
   '#c0964a', // Taş Devler Yaylası
   '#e4574b', // Ejder İni
+  '#6fd8e0', // Kristal Mağaraları
+  '#9fc4ff', // Gökyüzü Harabeleri
+  '#d8703c', // Küller Diyarı
+  '#a05cf0', // Boşluk Eşiği
 ];
 
 export function zoneName(stage) {
@@ -505,4 +565,14 @@ export function creatureType(stage, seed) {
 
 export function bossName(stage) {
   return BOSS_NAMES[tierIndex(stage)];
+}
+
+// Dizi uzunlukları kayarsa yanlış bölge/boss adı sessizce gösterilir — dev'de erken uyar.
+if (import.meta.env?.DEV) {
+  const lens = { CREATURE_TIERS, ZONE_NAMES, BOSS_NAMES, ZONE_THEMES };
+  for (const [name, arr] of Object.entries(lens)) {
+    if (arr.length !== TIER_COUNT) {
+      console.error(`[content] ${name} uzunluğu ${arr.length}, TIER_COUNT ${TIER_COUNT} olmalı`);
+    }
+  }
 }

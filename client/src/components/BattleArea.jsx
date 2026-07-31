@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useGameStore, selectors } from '../store/gameStore.js';
 import { zoneName, zoneTheme, NPCS, SKILLS } from '../game/constants.js';
 import { isBossStage, bossTime, killsRequired } from '../game/formulas.js';
-import { useT, zoneNameL, bossNameL } from '../game/i18n.js';
+import { useT, zoneNameL, bossNameL, creatureNameL } from '../game/i18n.js';
 import { fmt } from '../utils/format.js';
 import { sfx } from '../game/audio.js';
 import ZoneScene from './ZoneScene.jsx';
@@ -95,14 +95,15 @@ export default function BattleArea() {
   const combo = useGameStore((s) => s.combo);
   const { t, dn, lang } = useT();
 
-  // Düşman adını dile göre türet (enemy.name TR'de saklanır, fallback)
+  // Düşman adını dile göre türet (enemy.name TR'de saklanır, fallback).
+  // creatureNameL/bossNameL tur önekini de ekler: derin turlarda "Küllü Goblin".
   const enemyLabel = !enemy
     ? ''
     : enemy.kind !== 'boss'
-      ? dn('creature', enemy.typeId, enemy.name)
+      ? creatureNameL(lang, stage, enemy.typeId, enemy.name)
       : enemy.big
         ? bossNameL(lang, stage, enemy.name)
-        : `${t('elite')} ${dn('creature', enemy.typeId, enemy.name)}`;
+        : `${t('elite')} ${creatureNameL(lang, stage, enemy.typeId, enemy.name)}`;
 
   const arenaRef = useRef(null);
   const sigilRef = useRef(null);
