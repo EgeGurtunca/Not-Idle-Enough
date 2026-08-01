@@ -3,7 +3,7 @@ import {
   PRESTIGE_STAGE, TRANSCEND_STAGE, REALM_STAGE, REALM_CEILING, NPCS, PRESTIGE_UPGRADES, HERO_UPGRADES,
   STARDUST_UPGRADES, ESSENCE_UPGRADES, ARTIFACTS, REALM_ARTIFACTS, ALL_ARTIFACTS,
   ARTIFACT_MAX_LEVEL, SKILLS, ACHIEVEMENTS, MILESTONES,
-  creatureType, bossName, rollBossModifier, npcPassiveBonus,
+  creatureType, bossName, rollBossModifier, rollCreatureAffix, npcPassiveBonus,
 } from '../game/constants.js';
 import {
   isBossStage, creatureHp, creatureGold, bossHp, bossGold,
@@ -43,14 +43,19 @@ const DEFAULT_STATS = {
 function makeCreature(stage) {
   const seed = Math.floor(Math.random() * 1000);
   const type = creatureType(stage, seed);
+  const af = rollCreatureAffix(stage);
+  const hp = creatureHp(stage) * (af?.hpMult ?? 1);
   return {
     id: ++enemySeq,
     kind: 'creature',
     typeId: type.id,
     name: type.name,
     emoji: type.emoji,
-    hp: creatureHp(stage),
-    maxHp: creatureHp(stage),
+    modifier: af ? { id: af.id, name: af.name, emoji: af.emoji, color: af.color, desc: af.desc } : null,
+    goldMult: af?.goldMult ?? 1,
+    dpsMult: af?.dpsMult ?? 1,
+    hp,
+    maxHp: hp,
   };
 }
 
@@ -338,8 +343,8 @@ export const useGameStore = create((set, get) => ({
   _applyDamage(amount, isClick = false) {
     const s = get();
     if (!s.enemy) return;
-    // Zırhlı boss: NPC (klik dışı) hasarına dirençli
-    if (s.enemy.kind === 'boss' && !isClick) amount *= s.enemy.dpsMult ?? 1;
+    // Zırhlı boss/yaratık: NPC (klik dışı) hasarına dirençli — klik önem kazanır
+    if (!isClick) amount *= s.enemy.dpsMult ?? 1;
     const hp = s.enemy.hp - amount;
     if (hp > 0) {
       set({ enemy: { ...s.enemy, hp } });
@@ -385,7 +390,7 @@ export const useGameStore = create((set, get) => ({
       const killed = Math.min(1 + extra, required - s.kills); // boss'u geçme, sayacı doldur
       const kills = s.kills + killed;
       const justFilled = s.kills < required && kills >= required;
-      const reward = creatureGold(s.stage) * gmult * killed;
+      const reward = creatureGold(s.stage) * gmult * killed * (s.enemy.goldMult ?? 1);
       const stats = {
         ...s.stats,
         totalKills: s.stats.totalKills + killed,

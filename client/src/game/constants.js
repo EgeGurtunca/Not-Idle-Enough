@@ -48,6 +48,26 @@ export function rollBossModifier(big) {
   return BOSS_MODIFIERS[Math.floor(Math.random() * BOSS_MODIFIERS.length)];
 }
 
+// ---- Yaratık sıfatları ----
+// Boss modifiye'lerinin normal yaratık karşılığı. Yalnızca ilk tur bittikten sonra (Bölge 121+)
+// çıkar — erken oyun sade kalsın, derin turlarda farm çeşitlensin. Rozet/çeviri altyapısı
+// boss modifiye'leriyle ortak (enemy.modifier).
+export const CREATURE_AFFIXES = [
+  { id: 'afZirhli', name: 'Zırhlı',  emoji: '🛡️', color: '#8ea0ff', desc: 'NPC hasarına dirençli ama daha çok altın', hpMult: 1,   goldMult: 1.6, dpsMult: 0.45 },
+  { id: 'afSiskin', name: 'Şişkin',  emoji: '🎈', color: '#b6d63a', desc: 'Üç kat canlı, dört kat altın',              hpMult: 3,   goldMult: 4,   dpsMult: 1 },
+  { id: 'afCevik',  name: 'Çevik',   emoji: '💨', color: '#7fbf8e', desc: 'Yarı canlı, biraz fazla altın',             hpMult: 0.5, goldMult: 1.15, dpsMult: 1 },
+  { id: 'afUgurlu', name: 'Uğurlu',  emoji: '🍀', color: '#ffd86b', desc: 'Altı kat altın',                            hpMult: 1,   goldMult: 6,   dpsMult: 1 },
+];
+
+// Sıfat çıkma şansı: ilk turda yok, sonra tur başına artar (üst sınır %25).
+export function rollCreatureAffix(stage) {
+  const loop = loopIndex(stage);
+  if (loop < 1) return null;
+  const chance = Math.min(0.25, 0.05 + loop * 0.03);
+  if (Math.random() > chance) return null;
+  return CREATURE_AFFIXES[Math.floor(Math.random() * CREATURE_AFFIXES.length)];
+}
+
 export const MINIBOSS_HP_MULT = 10;
 export const MINIBOSS_GOLD_MULT = 13;
 export const BOSS_HP_MULT = 24;
