@@ -1,9 +1,14 @@
 import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
+import ErrorBoundary, { CrashScreen } from './components/ErrorBoundary.jsx';
 import { useGameStore } from './store/gameStore.js';
 import './styles.css';
 
-createRoot(document.getElementById('root')).render(<App />);
+createRoot(document.getElementById('root')).render(
+  <ErrorBoundary label="App" fallback={<CrashScreen />}>
+    <App />
+  </ErrorBoundary>
+);
 
 // Çevrimdışı oynanabilirlik (yalnızca yayın derlemesinde; dev'de önbellek karışıklığı olmasın)
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {

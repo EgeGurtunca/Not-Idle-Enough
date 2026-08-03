@@ -6,6 +6,7 @@ import { useT, zoneNameL, bossNameL, creatureNameL } from '../game/i18n.js';
 import { fmt } from '../utils/format.js';
 import { sfx } from '../game/audio.js';
 import ZoneScene from './ZoneScene.jsx';
+import ErrorBoundary from './ErrorBoundary.jsx';
 
 // Three.js kendi parçasına ayrılır: arayüz anında boyanır, yaratık hemen ardından gelir.
 const CreatureCanvas = lazy(() => import('./CreatureCanvas.jsx'));
@@ -254,9 +255,15 @@ export default function BattleArea() {
         onPointerDown={onHit}
         aria-label={t('attack')}
       >
-        <Suspense fallback={null}>
-          <CreatureCanvas enemy={enemy} hitId={hitId} stage={stage} />
-        </Suspense>
+        {/* WebGL yoksa ya da 3B parça yüklenemezse oyun emojiyle oynanmaya devam eder */}
+        <ErrorBoundary
+          label="CreatureCanvas"
+          fallback={<span className="canvas-fallback">{enemy.emoji}</span>}
+        >
+          <Suspense fallback={null}>
+            <CreatureCanvas enemy={enemy} hitId={hitId} stage={stage} />
+          </Suspense>
+        </ErrorBoundary>
       </button>
 
       <div className="hpbar">
