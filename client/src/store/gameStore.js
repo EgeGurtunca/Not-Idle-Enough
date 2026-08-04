@@ -15,6 +15,7 @@ import {
   essenceGain, setRealmBoost, essenceUpgradeCost, keptStardust, stageLeap, realmPullCost,
 } from '../game/formulas.js';
 import { sfx, setMuted } from '../game/audio.js';
+import { SAVE_VERSION } from '../game/saveFormat.js';
 import { fmt } from '../utils/format.js';
 import { t as translate, dnd } from '../game/i18n.js';
 
@@ -782,6 +783,7 @@ export const useGameStore = create((set, get) => ({
   getSaveData() {
     const s = get();
     return {
+      version: SAVE_VERSION,
       gold: s.gold,
       crystals: s.crystals,
       stage: s.stage,

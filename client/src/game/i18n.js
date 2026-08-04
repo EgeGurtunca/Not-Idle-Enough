@@ -113,6 +113,8 @@ export const STR = {
     crash_title: 'Something broke',
     crash_body: 'Your progress is safe — it is stored in this browser, not in the page. Reloading usually fixes it.',
     crash_reload: 'Reload',
+    set_undo: 'Undo last overwrite', set_undo_sub: 'Restore the save replaced by the last import or reset',
+    undo: 'Undo', msg_undone: 'Previous save restored.', msg_undo_fail: 'Nothing to restore.',
     // Offline modal
     offline_title: 'While you were away…',
     offline_body: 'Your companions kept hunting for {t}.',
@@ -227,6 +229,8 @@ export const STR = {
     crash_title: 'Bir şeyler bozuldu',
     crash_body: 'İlerlemen güvende — sayfada değil, bu tarayıcıda saklanıyor. Yenilemek genelde sorunu çözer.',
     crash_reload: 'Yenile',
+    set_undo: 'Son üzerine yazmayı geri al', set_undo_sub: 'Son içe aktarma veya sıfırlamanın sildiği kaydı geri getirir',
+    undo: 'Geri al', msg_undone: 'Önceki kayıt geri yüklendi.', msg_undo_fail: 'Geri alınacak kayıt yok.',
     offline_title: 'Sen yokken…',
     offline_body: 'Yoldaşların {t} boyunca avlanmaya devam etti.',
     offline_collect: 'Topla ve devam et',

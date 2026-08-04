@@ -1,18 +1,8 @@
 import { useRef, useState } from 'react';
 import { useGameStore } from '../store/gameStore.js';
-import { saveGame } from '../game/save.js';
+import { saveGame, stashCurrentSave, hasPrevSave, restorePrevSave } from '../game/save.js';
+import { isValidSave, migrateSave } from '../game/saveFormat.js';
 import { useT } from '../game/i18n.js';
-
-// Minimal check that an imported JSON is actually a save
-function isValidSave(data) {
-  return (
-    data &&
-    typeof data === 'object' &&
-    !Array.isArray(data) &&
-    typeof data.gold === 'number' &&
-    typeof data.stage === 'number'
-  );
-}
 
 export default function SettingsPanel() {
   const muted = useGameStore((s) => s.muted);
@@ -22,6 +12,7 @@ export default function SettingsPanel() {
   const { t } = useT();
   const [confirmReset, setConfirmReset] = useState(false);
   const [message, setMessage] = useState('');
+  const [canUndo, setCanUndo] = useState(hasPrevSave());
   const fileRef = useRef(null);
 
   function exportSave() {
@@ -41,14 +32,22 @@ export default function SettingsPanel() {
     e.target.value = '';
     if (!file) return;
     try {
-      const data = JSON.parse(await file.text());
+      const data = migrateSave(JSON.parse(await file.text()));
       if (!isValidSave(data)) throw new Error('invalid');
+      stashCurrentSave(); // yanlış dosya olursa geri alınabilsin
       useGameStore.getState().loadSaveData(data, null);
       saveGame();
+      setCanUndo(hasPrevSave());
       setMessage(t('msg_imported'));
     } catch {
       setMessage(t('msg_import_fail'));
     }
+  }
+
+  function undoOverwrite() {
+    const ok = restorePrevSave();
+    setCanUndo(hasPrevSave());
+    setMessage(t(ok ? 'msg_undone' : 'msg_undo_fail'));
   }
 
   function resetSave() {
@@ -58,9 +57,11 @@ export default function SettingsPanel() {
       totalPulls: 0, totalPrestiges: 0, stats: {}, achievements: {}, skillState: {},
       muted: useGameStore.getState().muted, lang: useGameStore.getState().lang, buyAmount: 1,
     };
+    stashCurrentSave(); // sıfırlama da geri alınabilir olsun
     useGameStore.getState().loadSaveData(fresh, null);
     saveGame();
     setConfirmReset(false);
+    setCanUndo(hasPrevSave());
     setMessage(t('msg_reset'));
   }
 
@@ -145,6 +146,19 @@ export default function SettingsPanel() {
           </button>
         )}
       </div>
+
+      {canUndo && (
+        <div className="row">
+          <span className="row-emoji">↩️</span>
+          <div className="row-info">
+            <div className="row-name">{t('set_undo')}</div>
+            <div className="row-sub">{t('set_undo_sub')}</div>
+          </div>
+          <button type="button" className="ghost" onClick={undoOverwrite}>
+            {t('undo')}
+          </button>
+        </div>
+      )}
 
       {message && <div className="panel-note subtle">{message}</div>}
       <div className="panel-note subtle">{t('save_local_note')}</div>

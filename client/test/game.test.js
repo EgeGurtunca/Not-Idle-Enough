@@ -17,6 +17,7 @@ import {
   creatureHp, creatureGold, bossHp, bossGold, crystalGain, transcendGain,
   essenceGain, stageLeap, keptStardust, rarityOdds, milestoneEvery,
 } from '../src/game/formulas.js';
+import { SAVE_VERSION, isValidSave, migrateSave } from '../src/game/saveFormat.js';
 
 test('içerik dizileri aynı uzunlukta (tier desenkronu olmasın)', () => {
   for (const [name, arr] of Object.entries({ CREATURE_TIERS, ZONE_NAMES, BOSS_NAMES, ZONE_THEMES })) {
@@ -118,6 +119,52 @@ test('çekiliş oranları %100\'e normalize olur, sahip olunanlar havuzdan düş
   const odds2 = rarityOdds(owned, ARTIFACTS);
   assert.ok(!odds2.some((o) => o.id === 'siradan'), 'biten rarity listede kalmamalı');
   assert.ok(Math.abs(odds2.reduce((n, o) => n + o.chance, 0) - 100) < 1e-9);
+});
+
+const iyiKayit = { gold: 100, stage: 5, highestStage: 12, npcLevels: { okcu: 3 }, artifacts: {} };
+
+test('kayıt doğrulama: bozuk/yabancı dosyalar reddedilir', () => {
+  assert.ok(isValidSave(iyiKayit));
+  assert.ok(isValidSave({ gold: 0, stage: 1 }), 'asgari alanlar yeterli');
+  for (const kotu of [
+    null, undefined, 42, 'kayit', [], [iyiKayit],
+    { gold: 'x', stage: 1 },
+    { gold: 1 },                                  // stage yok
+    { gold: -5, stage: 1 },                       // negatif altın
+    { gold: 1, stage: 0 },                        // geçersiz bölge
+    { gold: 1, stage: 1, npcLevels: [] },         // harita yerine dizi
+    { gold: 1, stage: 1, highestStage: 'çok' },
+    { gold: NaN, stage: 1 },
+  ]) {
+    assert.equal(isValidSave(kotu), false, `reddedilmeliydi: ${JSON.stringify(kotu)}`);
+  }
+});
+
+test('göç: sürümsüz eski kayıt güncel şemaya taşınır, ilerleme korunur', () => {
+  const eski = { gold: 999, stage: 40, highestStage: 120, npcLevels: { okcu: 7 }, artifacts: { pasliKilic: 2 } };
+  const yeni = migrateSave(eski);
+  assert.equal(yeni.version, SAVE_VERSION);
+  assert.equal(yeni.gold, 999, 'ilerleme kaybolmamalı');
+  assert.equal(yeni.npcLevels.okcu, 7);
+  assert.equal(yeni.artifacts.pasliKilic, 2);
+  // diyar katmanı alanları taban değerlerle doldurulmalı
+  assert.equal(yeni.realm, 1);
+  assert.equal(yeni.essence, 0);
+  assert.deepEqual(yeni.essenceLevels, {});
+  assert.equal(yeni.totalRealmPulls, 0);
+  assert.ok(isValidSave(yeni));
+});
+
+test('göç: güncel kayıt değişmez, ileri sürüm bozulmaz', () => {
+  const guncel = { ...iyiKayit, version: SAVE_VERSION, realm: 3, essence: 250 };
+  const g = migrateSave(guncel);
+  assert.equal(g.realm, 3);
+  assert.equal(g.essence, 250);
+  assert.equal(g.version, SAVE_VERSION);
+  // gelecekten gelen kayıt: dokunma, düşürme
+  const ileri = { ...iyiKayit, version: SAVE_VERSION + 5, realm: 9 };
+  assert.equal(migrateSave(ileri).version, SAVE_VERSION + 5);
+  assert.equal(migrateSave(ileri).realm, 9);
 });
 
 test('yaratık sıfatları ilk turda çıkmaz, derinlikte tavanlanır', () => {
