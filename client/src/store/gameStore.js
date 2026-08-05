@@ -142,6 +142,8 @@ export const useGameStore = create((set, get) => ({
   milestones: {}, // stage -> true (kilometre taşı ödülleri alındı mı)
   skillState: {}, // id -> { active, cd } (saniye)
   muted: false,
+  tips: {}, // görülüp kapatılan ipuçları (id -> true); kayda yazılır
+  fx3d: true, // 3B yaratıklar; kapalıyken emoji çizilir (pil/CPU tasarrufu), kayda yazılır
   lang: 'en', // arayüz dili (varsayılan İngilizce), kayda yazılır
   buyAmount: 1, // 1 | 10 | 'max' — tüm panellerde ortak, kayda yazılır
 
@@ -162,6 +164,14 @@ export const useGameStore = create((set, get) => ({
     const muted = !get().muted;
     setMuted(muted);
     set({ muted });
+  },
+
+  toggleFx3d() {
+    set({ fx3d: !get().fx3d });
+  },
+
+  dismissTip(id) {
+    set({ tips: { ...get().tips, [id]: true } });
   },
 
   setLang(lang) {
@@ -809,6 +819,8 @@ export const useGameStore = create((set, get) => ({
       milestones: s.milestones,
       skillState: s.skillState,
       muted: s.muted,
+      tips: s.tips,
+      fx3d: s.fx3d,
       lang: s.lang,
       buyAmount: s.buyAmount,
     };
@@ -844,6 +856,8 @@ export const useGameStore = create((set, get) => ({
       milestones: data.milestones ?? {},
       skillState: data.skillState ?? {},
       muted: data.muted ?? false,
+      tips: data.tips ?? {},
+      fx3d: data.fx3d ?? true,
       lang: data.lang ?? 'en',
       buyAmount: data.buyAmount ?? 1,
       mode: 'farm',

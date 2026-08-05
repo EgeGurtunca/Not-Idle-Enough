@@ -14,6 +14,7 @@ import RealmPanel from './components/RealmPanel.jsx';
 import AchievementsPanel from './components/AchievementsPanel.jsx';
 import SettingsPanel from './components/SettingsPanel.jsx';
 import OfflineModal from './components/OfflineModal.jsx';
+import TipBar from './components/TipBar.jsx';
 
 let booted = false;
 async function boot() {
@@ -89,6 +90,7 @@ export default function App() {
           </div>
         </aside>
       </main>
+      <TipBar />
       {toast && (
         <div className="toast" key={toast.id}>
           {toast.text}

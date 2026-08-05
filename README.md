@@ -25,15 +25,15 @@ backup from Settings before clearing site data or switching devices.
 ```bash
 npm install
 npm run dev        # Vite dev server at http://localhost:5173
+npm test           # invariant tests (node --test, no framework)
 ```
 
-The shipped game is fully client-side. (`server/` holds an optional Express + PGlite
-save-sync experiment and is not part of the build.)
+No backend, no database, no accounts — the game is entirely client-side.
 
 ## Build
 
 ```bash
-npm run build -w client   # static site in client/dist/
+npm run build      # static site in client/dist/
 ```
 
 Any static host works. The included [GitHub Actions workflow](.github/workflows/deploy.yml)

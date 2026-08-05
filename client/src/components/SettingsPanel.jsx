@@ -7,6 +7,8 @@ import { useT } from '../game/i18n.js';
 export default function SettingsPanel() {
   const muted = useGameStore((s) => s.muted);
   const toggleMuted = useGameStore((s) => s.toggleMuted);
+  const fx3d = useGameStore((s) => s.fx3d);
+  const toggleFx3d = useGameStore((s) => s.toggleFx3d);
   const lang = useGameStore((s) => s.lang);
   const setLang = useGameStore((s) => s.setLang);
   const { t } = useT();
@@ -103,6 +105,17 @@ export default function SettingsPanel() {
       </div>
 
       <div className="row">
+        <span className="row-emoji">{fx3d ? '🎬' : '🔤'}</span>
+        <div className="row-info">
+          <div className="row-name">{t('set_fx3d')}</div>
+          <div className="row-sub">{t('set_fx3d_sub')}</div>
+        </div>
+        <button type="button" className="ghost" onClick={toggleFx3d}>
+          {fx3d ? t('on') : t('off')}
+        </button>
+      </div>
+
+      <div className="row">
         <span className="row-emoji">📤</span>
         <div className="row-info">
           <div className="row-name">{t('set_io')}</div>
@@ -162,6 +175,7 @@ export default function SettingsPanel() {
 
       {message && <div className="panel-note subtle">{message}</div>}
       <div className="panel-note subtle">{t('save_local_note')}</div>
+      <div className="panel-note subtle version">Incrementaloth v{__APP_VERSION__}</div>
     </div>
   );
 }

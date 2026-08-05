@@ -21,7 +21,7 @@ export const TRANSCEND_MIN_CRYSTALS = 30;
 export const STARDUST_GAIN_BASE = 40;
 export const STARDUST_GAIN_DIV = 2000;
 // Diyar: öz = ESSENCE_GAIN_BASE * sqrt(toz / ESSENCE_THRESHOLD), en az ESSENCE_THRESHOLD toz
-export const ESSENCE_THRESHOLD = 800;
+export const ESSENCE_THRESHOLD = 940;
 export const ESSENCE_GAIN_BASE = 3;
 
 // Yaratık
@@ -30,7 +30,7 @@ export const HP_GROWTH = 1.5; // her stage HP çarpanı (Bölge 1..HP_RAMP_STAGE
 // Zorluk rampası: ilk prestijden sonra bölgeler kademeli sertleşir; 0→100 temposu korunur,
 // 100→500 uzar. (Altın da HP'ye bağlı olduğundan gelir aynı oranda artar.)
 export const HP_RAMP_STAGE = 100;
-export const HP_GROWTH_LATE = 1.521;
+export const HP_GROWTH_LATE = 1.524;
 export const GOLD_DIVISOR = 700; // altın = HP / 6
 // ---- Boss modifiye'leri ----
 // Boss savaşlarına taktik katar. hpMult/goldMult/timeMult başta uygulanır;
@@ -426,7 +426,7 @@ export const REALM_ARTIFACT_UPGRADE_MULT = 30; // Öz artifact'i geliştirme mal
 export const CREATURE_TIERS = [
   [
     { id: 'fare',       name: 'Lağım Faresi',      emoji: '🐀', look: { arch: 'quadruped', color: '#8a8078', ears: 'round', snout: 'point', tail: 'thin' } },
-    { id: 'yarasa',     name: 'Vampir Yarasa',     emoji: '🦇', look: { arch: 'flyer', color: '#5c5470', shape: 'small', wings: true, fangs: true } },
+    { id: 'yarasa',     name: 'Vampir Yarasa',     emoji: '🦇', look: { arch: 'flyer', color: '#5c5470', shape: 'small', ears: 'big', fangs: true } },
     { id: 'yilan',      name: 'Zehirli Yılan',     emoji: '🐍', look: { arch: 'serpent', color: '#5f9e58', fangs: true, eyes: { color: '#ffd84d' } } },
   ],
   [
@@ -457,11 +457,11 @@ export const CREATURE_TIERS = [
   [
     { id: 'dev',        name: 'Dağ Devi',          emoji: '👹', look: { arch: 'humanoid', color: '#b06a4a', shape: 'big', horns: 1, fangs: true } },
     { id: 'golem',      name: 'Taş Golem',         emoji: '🗿', look: { arch: 'humanoid', color: '#8d8a84', shape: 'big', glowEyes: '#f0a83c' } },
-    { id: 'sahin',      name: 'Kızıl Şahin',       emoji: '🦅', look: { arch: 'flyer', color: '#a3763f', wings: true, snout: 'point' } },
+    { id: 'sahin',      name: 'Kızıl Şahin',       emoji: '🦅', look: { arch: 'flyer', color: '#a3763f', snout: 'point' } },
   ],
   [
-    { id: 'wyvern',     name: 'Genç Wyvern',       emoji: '🐉', look: { arch: 'flyer', color: '#c05548', horns: 2, wings: true, tail: 'spike' } },
-    { id: 'kadimejder', name: 'Kadim Ejder',       emoji: '🐲', look: { arch: 'flyer', color: '#8f3f3f', shape: 'big', horns: 2, wings: true, tail: 'spike' } },
+    { id: 'wyvern',     name: 'Genç Wyvern',       emoji: '🐉', look: { arch: 'flyer', color: '#c05548', horns: 2, tail: 'spike' } },
+    { id: 'kadimejder', name: 'Kadim Ejder',       emoji: '🐲', look: { arch: 'flyer', color: '#8f3f3f', shape: 'big', horns: 2, tail: 'spike' } },
     { id: 'rex',        name: 'Kemikli Rex',       emoji: '🦖', look: { arch: 'quadruped', color: '#6f9e4f', longBody: true, shape: 'big', snout: 'long', fangs: true, tail: 'spike' } },
   ],
   [
@@ -470,7 +470,7 @@ export const CREATURE_TIERS = [
     { id: 'yankiHortlagi',  name: 'Yankı Hortlağı',   emoji: '🫧', look: { arch: 'ghost', color: '#a8e6ec', translucent: true, glowEyes: '#6fd8e0' } },
   ],
   [
-    { id: 'firtinaKartali', name: 'Fırtına Kartalı',  emoji: '🦅', look: { arch: 'flyer', color: '#9fc4ff', wings: true, snout: 'point', glowEyes: '#e8f0ff' } },
+    { id: 'firtinaKartali', name: 'Fırtına Kartalı',  emoji: '🦅', look: { arch: 'flyer', color: '#9fc4ff', snout: 'point', glowEyes: '#e8f0ff' } },
     { id: 'tasBekci',       name: 'Taş Bekçi',        emoji: '🗿', look: { arch: 'humanoid', color: '#8fa3c4', shape: 'big', horns: 2, glowEyes: '#9fc4ff' } },
     { id: 'gokYilani',      name: 'Gök Yılanı',       emoji: '🐍', look: { arch: 'serpent', color: '#7fb0e8', fangs: true, eyes: { color: '#e8f0ff' } } },
   ],

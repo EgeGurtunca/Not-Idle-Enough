@@ -198,6 +198,63 @@ button:disabled {
   filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.5));
 }
 
+/* Yeni oyuncu ipucu şeridi — duruma göre belirir, kapatılınca bir daha çıkmaz */
+.tipbar {
+  position: fixed;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(560px, calc(100vw - 28px));
+  padding: 10px 12px;
+  border: 1px solid rgba(240, 168, 60, 0.35);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(44, 40, 64, 0.97), rgba(24, 21, 36, 0.97));
+  box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.8), var(--card-hi);
+  animation: tipin 0.35s ease both;
+}
+
+@keyframes tipin {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.tipbar-mark {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.tipbar-text {
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--bone);
+}
+
+.tipbar-close {
+  margin-left: auto;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--bone-dim);
+  font-size: 12px;
+}
+
+.tipbar-close:hover {
+  color: var(--bone);
+  border-color: var(--ember);
+}
+
+@media (max-height: 880px) {
+  .tipbar { bottom: 8px; padding: 8px 10px; }
+  .tipbar-text { font-size: 12.5px; }
+}
+
 /* Genel çökme ekranı (beyaz ekran yerine) */
 .crash {
   display: grid;

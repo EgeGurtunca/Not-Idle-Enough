@@ -94,6 +94,7 @@ export default function BattleArea() {
   const clickDmg = useGameStore(selectors.clickDamage);
   const dps = useGameStore(selectors.totalDps);
   const combo = useGameStore((s) => s.combo);
+  const fx3d = useGameStore((s) => s.fx3d);
   const { t, dn, lang } = useT();
 
   // Düşman adını dile göre türet (enemy.name TR'de saklanır, fallback).
@@ -255,15 +256,19 @@ export default function BattleArea() {
         onPointerDown={onHit}
         aria-label={t('attack')}
       >
-        {/* WebGL yoksa ya da 3B parça yüklenemezse oyun emojiyle oynanmaya devam eder */}
-        <ErrorBoundary
-          label="CreatureCanvas"
-          fallback={<span className="canvas-fallback">{enemy.emoji}</span>}
-        >
-          <Suspense fallback={null}>
-            <CreatureCanvas enemy={enemy} hitId={hitId} stage={stage} />
-          </Suspense>
-        </ErrorBoundary>
+        {/* 3B kapalıysa (pil/CPU tasarrufu) ya da WebGL patlarsa aynı emoji yoluna düşülür */}
+        {fx3d ? (
+          <ErrorBoundary
+            label="CreatureCanvas"
+            fallback={<span className="canvas-fallback">{enemy.emoji}</span>}
+          >
+            <Suspense fallback={null}>
+              <CreatureCanvas enemy={enemy} hitId={hitId} stage={stage} />
+            </Suspense>
+          </ErrorBoundary>
+        ) : (
+          <span className="canvas-fallback">{enemy.emoji}</span>
+        )}
       </button>
 
       <div className="hpbar">

@@ -26,10 +26,22 @@ function statValue(s, stat) {
 }
 
 export default function AchievementsPanel() {
-  const state = useGameStore();
+  // Dar abonelikler: oyun döngüsü her 100ms enemy.hp yazıyor; tüm store'a abone olunca
+  // bu panel 36 başarımı saniyede ~10 kez yeniden hesaplıyordu. Artık yalnızca gerçekten
+  // kullandığı dilimler değişince çiziliyor.
+  const achievements = useGameStore((s) => s.achievements);
+  const stats = useGameStore((s) => s.stats);
+  const artifacts = useGameStore((s) => s.artifacts);
+  const highestStage = useGameStore((s) => s.highestStage);
+  const totalPrestiges = useGameStore((s) => s.totalPrestiges);
+  const totalTranscends = useGameStore((s) => s.totalTranscends);
+  const totalPulls = useGameStore((s) => s.totalPulls);
+  const realm = useGameStore((s) => s.realm);
+  const claimAchievement = useGameStore((s) => s.claimAchievement);
+  const claimAllAchievements = useGameStore((s) => s.claimAllAchievements);
   const count = useGameStore(selectors.achievementCount);
   const claimable = useGameStore(selectors.claimableAchievements);
-  const { stats } = state;
+  const state = { achievements, stats, artifacts, highestStage, totalPrestiges, totalTranscends, totalPulls, realm };
   const bonusPct = Math.round(count * ACHIEVEMENT_BONUS * 100);
   const { t, dnd } = useT();
 
@@ -41,7 +53,7 @@ export default function AchievementsPanel() {
           <strong>{t('ach_bonus', { p: bonusPct })}</strong>
         </div>
         {claimable > 0 && (
-          <button type="button" className="buy" onClick={state.claimAllAchievements}>
+          <button type="button" className="buy" onClick={claimAllAchievements}>
             {t('ach_claim_all', { n: claimable })}
           </button>
         )}
@@ -77,7 +89,7 @@ export default function AchievementsPanel() {
             {unlocked ? (
               <span className="maxed">✓</span>
             ) : claimable ? (
-              <button type="button" className="buy" onClick={() => state.claimAchievement(a.id)}>
+              <button type="button" className="buy" onClick={() => claimAchievement(a.id)}>
                 {t('ach_claim')}
               </button>
             ) : (

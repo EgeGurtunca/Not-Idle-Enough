@@ -2,6 +2,22 @@ import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
 import ErrorBoundary, { CrashScreen } from './components/ErrorBoundary.jsx';
 import { useGameStore } from './store/gameStore.js';
+// Fontlar pakete gömülü: çevrimdışı çalışır ve ziyaretçi Google'a istek atmaz.
+// latin + latin-ext birlikte; latin-ext olmadan Türkçe ş/ğ/ı bozulur.
+import '@fontsource/grenze-gotisch/latin-400.css';
+import '@fontsource/grenze-gotisch/latin-ext-400.css';
+import '@fontsource/grenze-gotisch/latin-700.css';
+import '@fontsource/grenze-gotisch/latin-ext-700.css';
+import '@fontsource/alegreya-sans/latin-400.css';
+import '@fontsource/alegreya-sans/latin-ext-400.css';
+import '@fontsource/alegreya-sans/latin-700.css';
+import '@fontsource/alegreya-sans/latin-ext-700.css';
+import '@fontsource/alegreya-sans/latin-800.css';
+import '@fontsource/alegreya-sans/latin-ext-800.css';
+import '@fontsource/ibm-plex-mono/latin-500.css';
+import '@fontsource/ibm-plex-mono/latin-ext-500.css';
+import '@fontsource/ibm-plex-mono/latin-600.css';
+import '@fontsource/ibm-plex-mono/latin-ext-600.css';
 import './styles.css';
 
 createRoot(document.getElementById('root')).render(
