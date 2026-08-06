@@ -8,7 +8,6 @@ export const REALM_STAGE = 1000; // Diyar Geçişi'nin (3. prestij katmanı) aç
 // Bir diyarın taşıyabileceği son bölge. JS sayı tavanı (1.8e308) ~1690'da aşılıyor ve
 // boss canı Infinity oluyordu; buranın altında güvenli sınır. İlerlemek için diyar değiştir.
 export const REALM_CEILING = 1500;
-export const MAX_STAGE = 500; // (artık sert sınır değil — stage sonsuz; 500 = aşkınlık eşiği)
 export const OFFLINE_CAP_HOURS = 10;
 export const AUTOSAVE_MS = 20000;
 

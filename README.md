@@ -15,7 +15,8 @@ hosted anywhere static (GitHub Pages, itch.io, …).
 - **Companions** auto-attack; **artifacts** (gacha chests) and **upgrades** boost you.
 - **Region 100 → Prestige** (crystals), **500 → Ascension** (stardust),
   **1000 → Realm Shift** (essence). Each layer resets what's below it for a permanent boost.
-- Regions are **endless** past 500.
+- Each realm runs to Region 1500; past that you **shift realms** and start over stronger — so the
+  climb never actually ends.
 
 English and Turkish, toggle in Settings. Progress is saved in your browser; export a JSON
 backup from Settings before clearing site data or switching devices.
