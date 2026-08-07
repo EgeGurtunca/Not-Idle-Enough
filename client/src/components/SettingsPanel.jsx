@@ -9,6 +9,8 @@ export default function SettingsPanel() {
   const toggleMuted = useGameStore((s) => s.toggleMuted);
   const fx3d = useGameStore((s) => s.fx3d);
   const toggleFx3d = useGameStore((s) => s.toggleFx3d);
+  const volume = useGameStore((s) => s.volume);
+  const setVolume = useGameStore((s) => s.setVolume);
   const lang = useGameStore((s) => s.lang);
   const setLang = useGameStore((s) => s.setLang);
   const { t } = useT();
@@ -103,6 +105,26 @@ export default function SettingsPanel() {
           {muted ? t('on') : t('off')}
         </button>
       </div>
+
+      {!muted && (
+        <div className="row">
+          <span className="row-emoji">🎚️</span>
+          <div className="row-info">
+            <div className="row-name">{t('set_volume')}</div>
+            <div className="row-sub">{Math.round(volume * 100)}%</div>
+          </div>
+          <input
+            type="range"
+            className="volume"
+            min="0"
+            max="1"
+            step="0.05"
+            value={volume}
+            aria-label={t('set_volume')}
+            onChange={(e) => setVolume(Number(e.target.value))}
+          />
+        </div>
+      )}
 
       <div className="row">
         <span className="row-emoji">{fx3d ? '🎬' : '🔤'}</span>

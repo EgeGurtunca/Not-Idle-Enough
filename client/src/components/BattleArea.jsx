@@ -192,7 +192,7 @@ export default function BattleArea() {
     const hit = clickAttack();
     if (!hit) return;
     if (hit.crit) sfx.crit();
-    else sfx.hit();
+    else sfx.hit(hit.combo);
     setHitId((h) => h + 1);
     const rect = arenaRef.current?.getBoundingClientRect();
     if (!rect) return;

@@ -14,7 +14,7 @@ import {
   transcendGain, stardustUpgradeCost, startingCrystals,
   essenceGain, setRealmBoost, essenceUpgradeCost, keptStardust, stageLeap, realmPullCost,
 } from '../game/formulas.js';
-import { sfx, setMuted } from '../game/audio.js';
+import { sfx, setMuted, setVolume as setAudioVolume } from '../game/audio.js';
 import { SAVE_VERSION } from '../game/saveFormat.js';
 import { fmt } from '../utils/format.js';
 import { t as translate, dnd } from '../game/i18n.js';
@@ -142,6 +142,7 @@ export const useGameStore = create((set, get) => ({
   milestones: {}, // stage -> true (kilometre taşı ödülleri alındı mı)
   skillState: {}, // id -> { active, cd } (saniye)
   muted: false,
+  volume: 0.7, // ses seviyesi 0..1; kayda yazılır
   tips: {}, // görülüp kapatılan ipuçları (id -> true); kayda yazılır
   fx3d: true, // 3B yaratıklar; kapalıyken emoji çizilir (pil/CPU tasarrufu), kayda yazılır
   lang: 'en', // arayüz dili (varsayılan İngilizce), kayda yazılır
@@ -164,6 +165,12 @@ export const useGameStore = create((set, get) => ({
     const muted = !get().muted;
     setMuted(muted);
     set({ muted });
+  },
+
+  setVolume(v) {
+    const volume = Math.max(0, Math.min(1, v));
+    setAudioVolume(volume);
+    set({ volume });
   },
 
   toggleFx3d() {
@@ -211,7 +218,7 @@ export const useGameStore = create((set, get) => ({
     };
     set({ stats, combo });
     get()._applyDamage(dmg, true);
-    return { dmg, crit };
+    return { dmg, crit, combo };
   },
 
   tick(dtSec) {
@@ -819,6 +826,7 @@ export const useGameStore = create((set, get) => ({
       milestones: s.milestones,
       skillState: s.skillState,
       muted: s.muted,
+      volume: s.volume,
       tips: s.tips,
       fx3d: s.fx3d,
       lang: s.lang,
@@ -829,6 +837,7 @@ export const useGameStore = create((set, get) => ({
   loadSaveData(data, offlineReport) {
     const stage = Math.min(REALM_CEILING, Math.max(1, data.stage ?? 1));
     setMuted(data.muted ?? false);
+    setAudioVolume(data.volume ?? 0.7);
     setRealmBoost(data.realm ?? 1, data.essenceLevels ?? {});
     set({
       gold: (data.gold ?? 0) + (offlineReport?.gold ?? 0),
@@ -856,6 +865,7 @@ export const useGameStore = create((set, get) => ({
       milestones: data.milestones ?? {},
       skillState: data.skillState ?? {},
       muted: data.muted ?? false,
+      volume: data.volume ?? 0.7,
       tips: data.tips ?? {},
       fx3d: data.fx3d ?? true,
       lang: data.lang ?? 'en',

@@ -198,6 +198,14 @@ button:disabled {
   filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.5));
 }
 
+/* Ses seviyesi kaydırıcısı */
+.volume {
+  width: 118px;
+  flex: none;
+  accent-color: var(--ember);
+  cursor: pointer;
+}
+
 /* Yeni oyuncu ipucu şeridi — duruma göre belirir, kapatılınca bir daha çıkmaz */
 .tipbar {
   position: fixed;

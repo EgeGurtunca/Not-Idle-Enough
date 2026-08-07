@@ -4,6 +4,9 @@ let ctx = null;
 let master = null;
 let muted = false;
 let lastHit = 0;
+let volume = 1; // kullanıcı seviyesi 0..1; BASE_GAIN ile çarpılır
+
+const BASE_GAIN = 0.22; // referans yükseklik (volume = 1 iken)
 
 function ensure() {
   if (!ctx) {
@@ -11,7 +14,7 @@ function ensure() {
     if (!AC) return false;
     ctx = new AC();
     master = ctx.createGain();
-    master.gain.value = 0.22;
+    master.gain.value = BASE_GAIN * volume;
     master.connect(ctx.destination);
   }
   if (ctx.state === 'suspended') ctx.resume();
@@ -20,6 +23,15 @@ function ensure() {
 
 export function setMuted(m) {
   muted = m;
+}
+
+// 0..1 arası; kayda yazılır. Kısa bir rampa ile uygulanır ki tık sesi çıkmasın.
+export function setVolume(v) {
+  volume = Math.max(0, Math.min(1, v));
+  if (master && ctx) {
+    master.gain.cancelScheduledValues(ctx.currentTime);
+    master.gain.setTargetAtTime(BASE_GAIN * volume, ctx.currentTime, 0.02);
+  }
 }
 
 function tone(freq, { type = 'square', dur = 0.08, vol = 1, slide = 0, delay = 0 } = {}) {
@@ -43,11 +55,15 @@ function arp(freqs, { type = 'triangle', dur = 0.15, vol = 0.5, step = 0.1 } = {
 }
 
 export const sfx = {
-  hit() {
+  // Kombo yükseldikçe perde de yükselir: hızlı tıklama duyulur hâle gelir.
+  // Yarım oktava kadar (maks komboda ×1.5) çıkar, sonra sabitlenir.
+  hit(combo = 0) {
     const now = performance.now();
     if (now - lastHit < 45) return; // hızlı tıklamada ses spam'ini kıs
     lastHit = now;
-    tone(150 + Math.random() * 70, { type: 'square', dur: 0.06, vol: 0.45, slide: -80 });
+    const step = Math.min(combo, 50) / 50;
+    const base = (150 + Math.random() * 70) * (1 + step * 0.5);
+    tone(base, { type: 'square', dur: 0.06, vol: 0.45, slide: -80 });
   },
   crit() {
     tone(300, { type: 'sawtooth', dur: 0.13, vol: 0.6, slide: -170 });
