@@ -263,6 +263,20 @@ button:disabled {
   .tipbar-text { font-size: 12.5px; }
 }
 
+/* Sabit ipucu şeridi içeriği örtmesin. İki ayrı kaydırma durumu var:
+   - masaüstü: panelin kendi kaydırma kabı (.tab-body) ekranın altına dayanır
+   - dar ekran: sayfanın tamamı kayar
+   Pay yalnızca ipucu görünürken verilir (:has), yoksa bedava boşluk kalırdı. */
+.app:has(.tipbar) .tab-body {
+  padding-bottom: 88px;
+}
+
+@media (max-width: 760px) {
+  .app:has(.tipbar) {
+    padding-bottom: 104px;
+  }
+}
+
 /* Genel çökme ekranı (beyaz ekran yerine) */
 .crash {
   display: grid;
