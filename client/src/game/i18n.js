@@ -268,8 +268,10 @@ export const STR = {
 
 // ---- Veri çevirileri (yalnızca İngilizce; TR constants'tan gelir) ----
 export const EN = {
-  npc: { okcu: 'Archer', sovalye: 'Knight', buyucu: 'Wizard', haydut: 'Rogue', rahip: 'War Priest', ejderavci: 'Dragon Hunter', suikastci: 'Shadow Assassin', firtina: 'Storm Caller', ates: 'Fire Dancer', buz: 'Ice Queen', ent: 'Ancient Ent', zaman: 'Time Keeper' },
-  npcPassive: { okcu: '+8% crit chance', sovalye: '+15% all damage', buyucu: '+20% gold', haydut: '+50% crit damage', rahip: '+20% all damage', ejderavci: '+30% gold', suikastci: '+10% crit chance', firtina: '+30% all damage', ates: '+75% crit damage', buz: '+40% gold', ent: '+40% all damage', zaman: '+50% gold' },
+  npc: { okcu: 'Archer', sovalye: 'Knight', buyucu: 'Wizard', haydut: 'Rogue', rahip: 'War Priest', ejderavci: 'Dragon Hunter', suikastci: 'Shadow Assassin', firtina: 'Storm Caller', ates: 'Fire Dancer', buz: 'Ice Queen', ent: 'Ancient Ent', zaman: 'Time Keeper',
+    falci: 'Star Augur', bosluk: 'Void Priestess', kristal: 'Crystal Warden', gokejder: 'Sky Dragon', kader: 'Fate Weaver', ilkAlev: 'Primordial Flame' },
+  npcPassive: { okcu: '+8% crit chance', sovalye: '+15% all damage', buyucu: '+20% gold', haydut: '+50% crit damage', rahip: '+20% all damage', ejderavci: '+30% gold', suikastci: '+10% crit chance', firtina: '+30% all damage', ates: '+75% crit damage', buz: '+40% gold', ent: '+40% all damage', zaman: '+50% gold',
+    falci: '+12% crit chance', bosluk: '+50% all damage', kristal: '+100% crit damage', gokejder: '+60% gold', kader: '+60% all damage', ilkAlev: '+150% crit damage' },
   creature: { fare: 'Sewer Rat', yarasa: 'Vampire Bat', yilan: 'Venom Snake', kurt: 'Hungry Wolf', domuz: 'Wild Boar', orumcek: 'Giant Spider', goblin: 'Goblin', trol: 'Cave Troll', tilki: 'Trickster Fox', iskelet: 'Skeleton Warrior', zombi: 'Zombie', hortlak: 'Wraith', akrep: 'Giant Scorpion', kertenkele: 'Lizard Warrior', timsah: 'Swamp Croc', vampir: 'Vampire Count', kurtadam: 'Werewolf', cadi: 'Dark Witch', dev: 'Mountain Giant', golem: 'Stone Golem', sahin: 'Crimson Hawk', wyvern: 'Young Wyvern', kadimejder: 'Ancient Dragon', rex: 'Bony Rex',
     kristalOrumcek: 'Crystal Spider', prizmaGolem: 'Prism Golem', yankiHortlagi: 'Echo Wraith',
     firtinaKartali: 'Storm Eagle', tasBekci: 'Stone Sentinel', gokYilani: 'Sky Serpent',

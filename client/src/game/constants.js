@@ -185,6 +185,14 @@ export const NPCS = [
   { id: 'buz',       name: 'Buz Kraliçesi',   emoji: '❄️', projectile: '❄️', unlockCost: 2e14,    baseDps: 6e12 },
   { id: 'ent',       name: 'Kadim Ent',       emoji: '🌳', projectile: '🍃', unlockCost: 5e15,    baseDps: 1.4e14 },
   { id: 'zaman',     name: 'Zaman Bekçisi',   emoji: '⏳', projectile: '🌀', unlockCost: 1.2e17,  baseDps: 3.2e15 },
+  // Geç oyun yoldaşları: aynı ~×25 maliyet / ~×22 DPS basamağıyla devam eder, böylece
+  // "satın alınacak yeni bir şey" ritmi Bölge ~103'te bitmek yerine ~150'ye kadar sürer.
+  { id: 'falci',     name: 'Yıldız Falcısı',  emoji: '🔭', projectile: '☄️', unlockCost: 3e18,    baseDps: 7.2e16 },
+  { id: 'bosluk',    name: 'Boşluk Rahibesi', emoji: '🕯️', projectile: '🌑', unlockCost: 7.5e19,  baseDps: 1.6e18 },
+  { id: 'kristal',   name: 'Kristal Muhafız', emoji: '💠', projectile: '🔷', unlockCost: 2e21,    baseDps: 3.6e19 },
+  { id: 'gokejder',  name: 'Gök Ejderi',      emoji: '🐉', projectile: '🌪️', unlockCost: 5e22,    baseDps: 8e20 },
+  { id: 'kader',     name: 'Kader Dokuyucu',  emoji: '🧵', projectile: '🪡', unlockCost: 1.2e24,  baseDps: 1.8e22 },
+  { id: 'ilkAlev',   name: 'İlk Alev',        emoji: '🔆', projectile: '🌋', unlockCost: 3e25,    baseDps: 4e23 },
 ];
 
 // ---- NPC pasifleri ----
@@ -204,6 +212,12 @@ export const NPC_PASSIVES = {
   buz:       { type: 'gold',       value: 0.40, label: '+%40 altın' },
   ent:       { type: 'dmg',        value: 0.40, label: '+%40 tüm hasar' },
   zaman:     { type: 'gold',       value: 0.50, label: '+%50 altın' },
+  falci:     { type: 'critChance', value: 0.12, label: '+%12 kritik şansı' },
+  bosluk:    { type: 'dmg',        value: 0.50, label: '+%50 tüm hasar' },
+  kristal:   { type: 'critMult',   value: 1.0,  label: '+%100 kritik hasarı' },
+  gokejder:  { type: 'gold',       value: 0.60, label: '+%60 altın' },
+  kader:     { type: 'dmg',        value: 0.60, label: '+%60 tüm hasar' },
+  ilkAlev:   { type: 'critMult',   value: 1.5,  label: '+%150 kritik hasarı' },
 };
 
 // Sv eşiğini geçen NPC'lerin pasiflerini topla
