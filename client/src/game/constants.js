@@ -149,6 +149,10 @@ export const ACHIEVEMENTS = [
   { id: 'realm2',   name: 'Çok Evrenli',        emoji: '🪐', desc: 'Diyar 5\'e ulaş',            stat: 'realm',           threshold: 5 },
   { id: 'ozart1',   name: 'Öz Toplayıcı',       emoji: '🧬', desc: '6 Öz artifact\'i topla',     stat: 'ownedRealmArtifacts', threshold: 6 },
   { id: 'ozart2',   name: 'Sonsuzluk Kasası',   emoji: '👁️‍🗨️', desc: '12 Öz artifact\'i topla',    stat: 'ownedRealmArtifacts', threshold: 12 },
+  // --- Diyar tavanına giden yol (1000 sonrası hedefsizdi) ---
+  { id: 'stage8',   name: 'Sınırların Ötesi',   emoji: '🌌', desc: 'Bölge 1250\'ye ulaş',        stat: 'highestStage',    threshold: 1250 },
+  { id: 'stage9',   name: 'Diyarın Sonu',       emoji: '🏁', desc: 'Bölge 1500\'e (diyar tavanı) ulaş', stat: 'highestStage', threshold: 1500 },
+  { id: 'realm3',   name: 'Diyar Efendisi',     emoji: '👑', desc: 'Diyar 10\'a ulaş',           stat: 'realm',           threshold: 10 },
 ];
 
 // ---- Kilometre taşı ödülleri ----
@@ -168,6 +172,10 @@ export const MILESTONES = [
   { stage: 600, crystals: 300000 },
   { stage: 750, crystals: 1000000 },
   { stage: 1000, crystals: 5000000 },
+  // Diyar tavanına (1500) kadar hedef bırak: 1000'den sonrası bomboştu.
+  { stage: 1150, crystals: 15000000 },
+  { stage: 1300, crystals: 50000000 },
+  { stage: REALM_CEILING, crystals: 200000000 },
 ];
 
 // ---- NPC'ler (Yoldaşlar) ----

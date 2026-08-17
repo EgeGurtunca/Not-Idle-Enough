@@ -300,6 +300,8 @@ export const EN = {
     trans1: ['Star Born', 'Ascend for the first time'], trans2: ['Constellation', 'Ascend 10 times'],
     realm1: ['Dimension Scout', 'Perform your first Realm Shift'], realm2: ['Multiversal', 'Reach Realm 5'],
     ozart1: ['Essence Gatherer', 'Collect 6 Essence artifacts'], ozart2: ['Vault of Infinity', 'Collect 12 Essence artifacts'],
+    stage8: ['Beyond the Edge', 'Reach Region 1250'], stage9: ['End of the Realm', 'Reach Region 1500 (the realm ceiling)'],
+    realm3: ['Lord of Realms', 'Reach Realm 10'],
   },
   artifact: {
     pasliKilic: 'Rusty Sword', tahtaKalkan: 'Wooden Shield', bakirYuzuk: 'Copper Ring', sansliZar: 'Lucky Die', deriEldiven: 'Leather Glove', demirTilsim: 'Iron Charm', kirikKumSaati: 'Broken Hourglass', eskiHarita: 'Worn Map', kemikKolye: 'Bone Necklace', camKure: 'Glass Orb',
