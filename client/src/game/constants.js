@@ -107,6 +107,9 @@ export const SKILLS = [
   { id: 'altinYagmuru', name: 'Altın Yağmuru', emoji: '🌧️', desc: 'Altın kazancı ×3',      duration: 30, cooldown: 180, unlockStage: 25,  mult: 3 },
   { id: 'zamanDonmasi', name: 'Zaman Donması', emoji: '🧊', desc: 'Boss süresi donar',     duration: 8,  cooldown: 150, unlockStage: 40 },
   { id: 'savasEmri',    name: 'Savaş Emri',    emoji: '📣', desc: 'NPC hasarı ×3',         duration: 15, cooldown: 180, unlockStage: 60,  mult: 3 },
+  // Geç oyun yetenekleri: açılış ritmi Bölge 60'ta bitiyordu, 150 ve 400'e uzatır.
+  { id: 'kaderDarbesi', name: 'Kader Darbesi', emoji: '☄️', desc: 'Tüm hasar ×8',          duration: 12, cooldown: 240, unlockStage: 150, mult: 8 },
+  { id: 'kusursuzNisan',name: 'Kusursuz Nişan',emoji: '🎯', desc: 'Her klik kritik',       duration: 15, cooldown: 300, unlockStage: 400 },
 ];
 
 // ---- Başarımlar (her biri kalıcı +%2 hasar ve +%2 altın verir) ----

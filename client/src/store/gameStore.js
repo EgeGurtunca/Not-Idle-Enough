@@ -107,6 +107,10 @@ function statValue(s, stat) {
 
 const achCount = (s) => Object.keys(s.achievements).length;
 const skillActive = (s, id) => (s.skillState[id]?.active ?? 0) > 0;
+// Yetenek çarpanı VERİDEN okunur (SKILLS[].mult). Önceden kodda sabitti; veriyi
+// değiştirmek hiçbir işe yaramıyordu (mult: 5 yazıp kodda *5 tutmak gibi).
+const SKILL_MULT = Object.fromEntries(SKILLS.map((sk) => [sk.id, sk.mult ?? 1]));
+const skillMult = (s, id) => (skillActive(s, id) ? SKILL_MULT[id] ?? 1 : 1);
 
 const freshRunState = (prestigeLevels) => ({
   gold: startingGold(prestigeLevels),
@@ -199,7 +203,7 @@ export const useGameStore = create((set, get) => ({
     const s = get();
     if (!s.enemy || !s.loaded) return null;
     let dmg = clickDamage(s.heroLevel, s.prestigeLevels, s.artifacts, achCount(s), s.stardustLevels);
-    if (skillActive(s, 'ofke')) dmg *= 5;
+    dmg *= skillMult(s, 'ofke') * skillMult(s, 'kaderDarbesi');
     if (s.goldenBuffLeft > 0) dmg *= 7;
     // Kombo: 1.2sn içinde ardışık klik çarpanı büyütür (maks +%100)
     const now = performance.now();
@@ -208,7 +212,8 @@ export const useGameStore = create((set, get) => ({
     dmg *= 1 + Math.min(combo, COMBO_MAX) * 0.02;
     const pb = npcPassiveBonus(s.npcLevels);
     dmg *= pb.dmgMult;
-    const crit = Math.random() < critChance(s.heroUpgrades, s.artifacts) + pb.critChance;
+    const crit = skillActive(s, 'kusursuzNisan') ||
+      Math.random() < critChance(s.heroUpgrades, s.artifacts) + pb.critChance;
     if (crit) dmg *= critMultiplier(s.heroUpgrades, s.artifacts) + pb.critMult;
     const stats = {
       ...s.stats,
@@ -256,7 +261,7 @@ export const useGameStore = create((set, get) => ({
 
     let dps = totalDps(s.npcLevels, s.prestigeLevels, s.artifacts, achCount(s), s.stardustLevels);
     dps *= npcPassiveBonus(s.npcLevels).dmgMult;
-    if (skillActive(s, 'savasEmri')) dps *= 3;
+    dps *= skillMult(s, 'savasEmri') * skillMult(s, 'kaderDarbesi');
     if (dps > 0) get()._applyDamage(dps * dtSec, false);
 
     // Altın Yaratık: yoksa geri sayım işler, süre dolunca belirir; varsa ttl azalır
@@ -371,7 +376,7 @@ export const useGameStore = create((set, get) => ({
     // Düşman öldü
     let gmult = goldMultiplier(s.prestigeLevels, s.heroUpgrades, s.artifacts, achCount(s), s.stardustLevels);
     gmult *= npcPassiveBonus(s.npcLevels).goldMult;
-    if (skillActive(s, 'altinYagmuru')) gmult *= 3;
+    gmult *= skillMult(s, 'altinYagmuru');
     if (s.goldenBuffLeft > 0) gmult *= 3;
     if (s.enemy.kind === 'boss') {
       const reward = bossGold(s.stage) * gmult * (s.enemy.goldMult ?? 1);
