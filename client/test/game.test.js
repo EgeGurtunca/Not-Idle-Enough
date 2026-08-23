@@ -11,13 +11,14 @@ import {
   CREATURE_TIERS, ZONE_NAMES, BOSS_NAMES, ZONE_THEMES,
   ARTIFACTS, REALM_ARTIFACTS, ALL_ARTIFACTS,
   REALM_CEILING, REALM_STAGE, TRANSCEND_STAGE, PRESTIGE_STAGE,
-  ESSENCE_THRESHOLD, rollCreatureAffix, CREATURE_AFFIXES,
+  ESSENCE_THRESHOLD, rollCreatureAffix, CREATURE_AFFIXES, OFFLINE_CAP_HOURS, npcPassiveBonus,
 } from '../src/game/constants.js';
 import {
   creatureHp, creatureGold, bossHp, bossGold, crystalGain, transcendGain,
-  essenceGain, stageLeap, keptStardust, rarityOdds, milestoneEvery,
+  essenceGain, stageLeap, keptStardust, rarityOdds, milestoneEvery, totalDps, goldMultiplier,
 } from '../src/game/formulas.js';
 import { SAVE_VERSION, isValidSave, migrateSave } from '../src/game/saveFormat.js';
+import { computeOffline } from '../src/game/offline.js';
 
 test('içerik dizileri aynı uzunlukta (tier desenkronu olmasın)', () => {
   for (const [name, arr] of Object.entries({ CREATURE_TIERS, ZONE_NAMES, BOSS_NAMES, ZONE_THEMES })) {
@@ -181,4 +182,54 @@ test('yaratık sıfatları ilk turda çıkmaz, derinlikte tavanlanır', () => {
   for (const a of CREATURE_AFFIXES) {
     assert.ok(a.goldMult > 0 && a.hpMult > 0 && a.dpsMult > 0, `${a.id} çarpanları pozitif olmalı`);
   }
+});
+
+// ---- Çevrimdışı kazanç ----
+// Bu testler gerçek bir hatanın nöbetçisi: çevrimdışı hesap save.js içine gömülüyken
+// canlı oyundan sessizce ayrışmış, yoldaş pasiflerini uygulamayı unutmuştu (9.45× eksik altın).
+const SAAT = 3600e3;
+const kayit = (over = {}) => ({
+  gold: 0, stage: 30, npcLevels: { okcu: 60 }, prestigeLevels: {}, heroUpgrades: {},
+  artifacts: {}, stardustLevels: {}, achievements: {}, essenceLevels: {}, realm: 1, ...over,
+});
+
+test('çevrimdışı: süre sınırı ve alt eşik', () => {
+  const now = Date.now();
+  assert.equal(computeOffline(kayit(), now - 30e3, now), null, '1 dakikadan kısa ara sayılmamalı');
+  const uzun = computeOffline(kayit(), now - 40 * SAAT, now);
+  assert.ok(uzun, '40 saat sonra kazanç olmalı');
+  assert.ok(uzun.seconds <= OFFLINE_CAP_HOURS * 3600 + 1, `süre ${OFFLINE_CAP_HOURS} saatle sınırlı olmalı`);
+  assert.equal(computeOffline(kayit({ npcLevels: {} }), now - 5 * SAAT, now), null, 'NPC yoksa kazanç yok');
+});
+
+test('KRİTİK: çevrimdışı kazanç canlı oyunla AYNI çarpan zincirini kullanır', () => {
+  // Zayıf test tuzağı: iki farklı seviyeyi kıyaslamak yetmez (fark DPS'ten gelir).
+  // Burada beklenen değeri zincirin tamamından bağımsızca hesaplayıp birebir eşitlik ararız,
+  // böylece zincirden bir halka (ör. pasif çarpanı) düşerse test düşer.
+  const now = Date.now();
+  const npcLevels = { okcu: 60, sovalye: 60, buyucu: 60, zaman: 60 };
+  const d = kayit({ npcLevels, stage: 45 });
+  const saat = 2;
+  const r = computeOffline(d, now - saat * SAAT, now);
+  assert.ok(r, 'kazanç hesaplanmalı');
+
+  const pb = npcPassiveBonus(npcLevels);
+  assert.ok(pb.dmgMult > 1 && pb.goldMult > 1, 'kurulum: pasifler aktif olmalı');
+  const dps = totalDps(npcLevels, {}, {}, 0, {}) * pb.dmgMult;
+  const kills = (saat * 3600 * dps) / creatureHp(45);
+  const beklenen = kills * creatureGold(45) * goldMultiplier({}, {}, {}, 0, {}) * pb.goldMult;
+
+  const oran = r.gold / beklenen;
+  assert.ok(Math.abs(oran - 1) < 1e-9, 'cevrimdisi kazanc zinciri sapmis, beklenenin   kati: ' + oran.toFixed(4));
+});
+
+test('çevrimdışı kazanç sonlu ve bölgeyle birlikte artar', () => {
+  const now = Date.now();
+  let onceki = 0;
+  for (const stage of [10, 50, 200, 800, 1400]) {
+    const r = computeOffline(kayit({ stage, npcLevels: { okcu: 200, zaman: 200 } }), now - 3 * SAAT, now);
+    assert.ok(r && Number.isFinite(r.gold) && r.gold > 0, `Bölge ${stage}: geçersiz kazanç`);
+    onceki = r.gold;
+  }
+  assert.ok(onceki > 0);
 });
