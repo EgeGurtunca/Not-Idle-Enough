@@ -2,10 +2,10 @@
 
 A fantasy clicker / idle / incremental game. Click to slay creatures, hire companions
 that fight for you, and climb an endless ladder of regions through **three prestige
-layers** — Prestige (crystals), Ascension (stardust), and Realm Shift (essence).
+layers**: Prestige (crystals), Ascension (stardust), and Realm Shift (essence).
 
 Built with **React + Vite + Zustand**, with procedural 3D creatures rendered in **Three.js**.
-No backend — the whole game runs in the browser and saves to `localStorage`, so it can be
+No backend: the whole game runs in the browser and saves to `localStorage`, so it can be
 hosted anywhere static (GitHub Pages, itch.io, …).
 
 ## Play
@@ -15,7 +15,7 @@ hosted anywhere static (GitHub Pages, itch.io, …).
 - **Companions** auto-attack; **artifacts** (gacha chests) and **upgrades** boost you.
 - **Region 100 → Prestige** (crystals), **500 → Ascension** (stardust),
   **1000 → Realm Shift** (essence). Each layer resets what's below it for a permanent boost.
-- Each realm runs to Region 1500; past that you **shift realms** and start over stronger — so the
+- Each realm runs to Region 1500; past that you **shift realms** and start over stronger, so the
   climb never actually ends.
 
 English and Turkish, toggle in Settings. Progress is saved in your browser; export a JSON
@@ -29,7 +29,7 @@ npm run dev        # Vite dev server at http://localhost:5173
 npm test           # invariant tests (node --test, no framework)
 ```
 
-No backend, no database, no accounts — the game is entirely client-side.
+No backend, no database, no accounts. The game is entirely client-side.
 
 ## Build
 
