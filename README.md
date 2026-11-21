@@ -6,7 +6,7 @@ layers**: Prestige (crystals), Ascension (stardust), and Realm Shift (essence).
 
 Built with **React + Vite + Zustand**, with procedural 3D creatures rendered in **Three.js**.
 No backend: the whole game runs in the browser and saves to `localStorage`, so it can be
-hosted anywhere static (GitHub Pages, itch.io, …).
+hosted anywhere static (GitHub Pages, itch.io and so on).
 
 ## Play
 
@@ -35,6 +35,7 @@ No backend, no database, no accounts. The game is entirely client-side.
 
 ```bash
 npm run build      # static site in client/dist/
+npm run preview    # serve the built site locally to check it before deploying
 ```
 
 Any static host works. The included [GitHub Actions workflow](.github/workflows/deploy.yml)
